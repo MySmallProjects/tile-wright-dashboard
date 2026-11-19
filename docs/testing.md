@@ -75,7 +75,51 @@ Open `http://localhost:8080/` (Layout Lab) and `http://localhost:8080/harness.ht
 ---
 
 ## Phase 2: Backend Skeleton
-*(Checklist will be detailed at the end of Phase 2.)*
+
+Run automated tests first:
+```bash
+dotnet test src/Tilewright.sln
+```
+Then start the server in Development mode:
+```bash
+dotnet run --project src/Tilewright.Server
+```
+Server listens on `http://localhost:5050` with Swagger UI at `http://localhost:5050/swagger`.
+
+### 2.1 Versioning (Git-Independent)
+- [ ] **Check `/api/version`:** Open `http://localhost:5050/api/version` (or via Swagger).
+  - *Expected:* Returns JSON with `version` (`0.1.0+<build>`), `buildNumber`, `buildDate`, `configuration`, and `machineName` (and `gitCommit`/`gitDirty` only if git is present).
+- [ ] **Two consecutive builds:** Run `dotnet build src/Tilewright.Server/Tilewright.Server.csproj` twice and inspect `src/build-number.txt`.
+  - *Expected:* The build number increases by 1 on each build.
+- [ ] **Build with no `.git` folder:** Copy `src/` to a temporary folder without `.git` and run `dotnet build Tilewright.Server/Tilewright.Server.csproj`.
+  - *Expected:* Build succeeds and `/api/version` reports version, build number, and date without error (`gitCommit` and `gitDirty` omitted).
+
+### 2.2 First-Run Setup, Login, Roles & Persistent Sessions
+- [ ] **First-run detection:** With an empty `src/Tilewright.Server/data` folder, call `GET /api/auth/status`.
+  - *Expected:* Returns `needsSetup: true`, `authenticated: false`.
+- [ ] **Create first admin:** Call `POST /api/auth/setup` with a display name and optional password.
+  - *Expected:* Returns `201 Created`, sets `tw_session` cookie, and a second call to `POST /api/auth/setup` returns `409 Conflict`.
+- [ ] **Restart server — still logged in:** Stop `dotnet run` (`Ctrl+C`), start it again, and call `GET /api/auth/status` with the same browser/cookie.
+  - *Expected:* Still `authenticated: true` (sessions reloaded from `data/sessions.json`).
+- [ ] **Password & no-password users:** As admin, create a `user` without a password via `POST /api/users`. Log in as that user via `POST /api/auth/login` with no password, then try `GET /api/users`.
+  - *Expected:* Login succeeds (`200 OK`); `GET /api/users` returns `403 Forbidden` (admin-only).
+- [ ] **Remove user / reset password revokes sessions:** As admin, delete the test user (`DELETE /api/users/{id}`) or reset their password (`PUT /api/users/{id}/password`).
+  - *Expected:* Their existing session cookie immediately stops working (`401 Unauthorized`).
+- [ ] **Login throttling:** Send 6 failed password login attempts in a row for a password-protected user.
+  - *Expected:* 6th attempt returns `429 Too Many Requests` with a `Retry-After` header.
+
+### 2.3 HTTP vs HTTPS Detection
+- [ ] **Plain HTTP cookie:** Inspect the `Set-Cookie` header from `POST /api/auth/login` over `http://localhost:5050`.
+  - *Expected:* Cookie is named `tw_session` with `HttpOnly; SameSite=Lax` and **no** `Secure` flag; no `Strict-Transport-Security` header.
+- [ ] **Behind nginx HTTPS (or localhost `X-Forwarded-Proto: https`):** Send a request from `localhost` with header `X-Forwarded-Proto: https`.
+  - *Expected:* Cookie is named `__Host-tw_session` with `Secure`, and `Strict-Transport-Security` header is present. (Verified automatically by `HttpsDetectionTests`.)
+
+### 2.4 Dashboards, Storage Resilience & SignalR
+- [ ] **Dashboard CRUD & layout/data separation:** Create a second dashboard, save layout via `PUT /api/dashboards/{id}/layout`, save tile data via `PUT /api/dashboards/{id}/tiles/{tileId}/data`, then update layout again.
+  - *Expected:* Tile data remains intact and stored separately under `data/users/<userId>/dashboards/<dashboardId>/data/`.
+- [ ] **Corrupt JSON recovery:** Corrupt a non-critical JSON file (e.g. `data/site.json`) with invalid text and call `GET /api/site`.
+  - *Expected:* Server does not crash, logs a warning, renames the corrupt file to `site.json.corrupt.<timestamp>.bak`, and returns default settings.
+- [ ] **Swagger & SignalR hub:** Open `http://localhost:5050/swagger` and confirm all endpoints are documented; authenticated SignalR clients can connect to `/hubs/dashboard` and invoke `Ping()`.
 
 ## Phase 3: Frontend Shell
 *(Checklist will be detailed at the end of Phase 3.)*

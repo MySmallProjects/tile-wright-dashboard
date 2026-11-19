@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+TestResults/
+
+# Local development data (dashboards, sessions, secrets)
+data/
+src/Tilewright.Server/data/
+
+# Node / Frontend (Phase 3+)
+node_modules/
+dist/
+.vite/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

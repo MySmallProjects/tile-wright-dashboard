@@ -13,17 +13,28 @@
 >
 > See [docs/architecture.md](docs/architecture.md) for the full trust model and [docs/improvements.md](docs/improvements.md) for future isolation ideas.
 
-## Quick Start (Phase 1 Prototype)
+## Quick Start
 
-Phase 1 contains a **disposable** Layout Lab and API/Tile harness in `src/prototype/` (vanilla HTML/CSS/JS, offline-bundled).
+### Backend Server (Phase 2 — .NET 10)
+
+```bash
+dotnet test src/Tilewright.sln
+dotnet run --project src/Tilewright.Server
+```
+
+- **API & Swagger UI (dev):** `http://localhost:5050/swagger`
+- **Version endpoint:** `http://localhost:5050/api/version`
+- **SignalR hub:** `http://localhost:5050/hubs/dashboard`
+- **Dev data folder:** `src/Tilewright.Server/data/` (gitignored)
+
+### Phase 1 Prototype (Disposable Layout Lab & Harness)
 
 ```bash
 cd src/prototype
 python3 -m http.server 8080
 ```
 
-Then open:
-- **Layout Lab:** `http://localhost:8080/` (or `http://<your-lan-ip>:8080/` from a tablet on the same network)
+- **Layout Lab:** `http://localhost:8080/`
 - **API / Tile Harness:** `http://localhost:8080/harness.html`
 
 ## Documentation

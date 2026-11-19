@@ -1,0 +1,80 @@
+<Project>
+  <!--
+    Single source of truth for Tilewright versioning (git-independent).
+    Major, Minor, and Patch are set by hand.
+    BuildNumber is incremented automatically on each Tilewright.Server build in src/build-number.txt.
+  -->
+  <PropertyGroup>
+    <Major>0</Major>
+    <Minor>1</Minor>
+    <Patch>0</Patch>
+    <BuildNumberFile>$(MSBuildThisFileDirectory)build-number.txt</BuildNumberFile>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <VersionPrefix>$(Major).$(Minor).$(Patch)</VersionPrefix>
+  </PropertyGroup>
+
+  <Target Name="StampTilewrightVersion" BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo;CoreCompile">
+    <PropertyGroup>
+      <_RawBuildNumber Condition="Exists('$(BuildNumberFile)')">$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</_RawBuildNumber>
+      <_CurrentBuildNumber Condition="'$(_RawBuildNumber)' != ''">$(_RawBuildNumber)</_CurrentBuildNumber>
+      <_CurrentBuildNumber Condition="'$(_CurrentBuildNumber)' == ''">0</_CurrentBuildNumber>
+      <BuildNumber Condition="'$(IncrementBuildNumber)' == 'true'">$([MSBuild]::Add($(_CurrentBuildNumber), 1))</BuildNumber>
+      <BuildNumber Condition="'$(IncrementBuildNumber)' != 'true'">$(_CurrentBuildNumber)</BuildNumber>
+      <BuildDateUtc>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildDateUtc>
+      <BuildMachineName>$([System.Environment]::MachineName)</BuildMachineName>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(IncrementBuildNumber)' == 'true'"
+      File="$(BuildNumberFile)"
+      Lines="$(BuildNumber)"
+      Overwrite="true"
+      Encoding="UTF-8" />
+
+    <!-- Optional git info: silently omitted if git is absent or no .git folder exists -->
+    <Exec Command="git rev-parse --short HEAD"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          ContinueOnError="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          WorkingDirectory="$(MSBuildThisFileDirectory)..">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommitRaw" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitCommitExitCode" />
+    </Exec>
+
+    <Exec Condition="'$(_GitCommitExitCode)' == '0'"
+          Command="git status --porcelain"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          ContinueOnError="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          WorkingDirectory="$(MSBuildThisFileDirectory)..">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitStatusRaw" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitStatusExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <AssemblyVersion>$(Major).$(Minor).$(Patch).$(BuildNumber)</AssemblyVersion>
+      <FileVersion>$(Major).$(Minor).$(Patch).$(BuildNumber)</FileVersion>
+      <InformationalVersion>$(Major).$(Minor).$(Patch)+$(BuildNumber)</InformationalVersion>
+      <Version>$(Major).$(Minor).$(Patch)+$(BuildNumber)</Version>
+      <_HasGitCommit Condition="'$(_GitCommitExitCode)' == '0' and '$(_GitCommitRaw)' != ''">true</_HasGitCommit>
+      <_GitDirty Condition="'$(_HasGitCommit)' == 'true' and '$(_GitStatusExitCode)' == '0' and '$(_GitStatusRaw)' != ''">true</_GitDirty>
+      <_GitDirty Condition="'$(_HasGitCommit)' == 'true' and '$(_GitStatusExitCode)' == '0' and '$(_GitStatusRaw)' == ''">false</_GitDirty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AssemblyMetadata Include="Major" Value="$(Major)" />
+      <AssemblyMetadata Include="Minor" Value="$(Minor)" />
+      <AssemblyMetadata Include="Patch" Value="$(Patch)" />
+      <AssemblyMetadata Include="BuildNumber" Value="$(BuildNumber)" />
+      <AssemblyMetadata Include="BuildDate" Value="$(BuildDateUtc)" />
+      <AssemblyMetadata Include="BuildConfiguration" Value="$(Configuration)" />
+      <AssemblyMetadata Include="BuildMachine" Value="$(BuildMachineName)" />
+      <AssemblyMetadata Condition="'$(_HasGitCommit)' == 'true'" Include="GitCommit" Value="$(_GitCommitRaw)" />
+      <AssemblyMetadata Condition="'$(_HasGitCommit)' == 'true' and '$(_GitDirty)' != ''" Include="GitDirty" Value="$(_GitDirty)" />
+    </ItemGroup>
+  </Target>
+</Project>
