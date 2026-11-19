@@ -13,7 +13,9 @@
     <VersionPrefix>$(Major).$(Minor).$(Patch)</VersionPrefix>
   </PropertyGroup>
 
-  <Target Name="StampTilewrightVersion" BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo;CoreCompile">
+  <Target Name="StampTilewrightVersion"
+          BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo;CoreCompile"
+          Condition="'$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
       <_RawBuildNumber Condition="Exists('$(BuildNumberFile)')">$([System.IO.File]::ReadAllText('$(BuildNumberFile)').Trim())</_RawBuildNumber>
       <_CurrentBuildNumber Condition="'$(_RawBuildNumber)' != ''">$(_RawBuildNumber)</_CurrentBuildNumber>

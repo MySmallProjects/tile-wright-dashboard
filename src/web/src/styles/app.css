@@ -1,0 +1,229 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--tw-font-family);
+  font-size: var(--tw-font-size-base);
+  color: var(--tw-text);
+  background-color: var(--tw-bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--tw-bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  transform: scale(1.02);
+}
+
+.bg-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+.app-root {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button,
+.btn {
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--tw-border);
+  background: var(--tw-surface-solid);
+  color: var(--tw-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  touch-action: manipulation;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button.primary {
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  border-color: transparent;
+}
+
+button.danger {
+  background: var(--tw-state-critical);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+button.icon-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 10px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="color"],
+select,
+textarea {
+  font-family: inherit;
+  font-size: 0.94rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--tw-border);
+  background: var(--tw-surface-elevated);
+  color: var(--tw-text);
+  min-height: 40px;
+}
+
+input[type="range"] {
+  accent-color: var(--tw-accent);
+}
+
+.card {
+  background: var(--tw-surface);
+  border: var(--tw-tile-border);
+  border-radius: var(--tw-tile-radius);
+  box-shadow: var(--tw-tile-shadow);
+  backdrop-filter: blur(var(--tw-tile-blur));
+  -webkit-backdrop-filter: blur(var(--tw-tile-blur));
+}
+
+/* Gridstack tile overrides */
+.grid-stack-item-content {
+  background: var(--tw-surface);
+  border: var(--tw-tile-border);
+  border-radius: var(--tw-tile-radius);
+  box-shadow: var(--tw-tile-shadow);
+  backdrop-filter: blur(var(--tw-tile-blur));
+  -webkit-backdrop-filter: blur(var(--tw-tile-blur));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+}
+
+.tile-toolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--tw-surface-elevated);
+  border-bottom: 1px solid var(--tw-border);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.is-edit-mode .tile-toolbar {
+  display: flex;
+}
+
+.tile-toolbar-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tile-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tile-toolbar-actions button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+  border-radius: 7px;
+}
+
+.tile-toolbar-actions button.active-pin {
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  border-color: transparent;
+}
+
+.tile-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-edit-mode .tile-body {
+  pointer-events: none;
+  user-select: none;
+}
+
+.grid-wrapper:not(.is-edit-mode) .ui-resizable-handle {
+  display: none !important;
+}
+
+.is-edit-mode .grid-stack-item-content {
+  outline: 2px dashed rgba(37, 99, 235, 0.45);
+  outline-offset: -2px;
+}
+
+.is-edit-mode .grid-stack-item[data-pinned="true"] .grid-stack-item-content {
+  outline-style: solid;
+  outline-color: var(--tw-accent);
+}
+
+.grid-stack-placeholder > .placeholder-content {
+  background: rgba(37, 99, 235, 0.18) !important;
+  border: 2px dashed var(--tw-accent) !important;
+  border-radius: var(--tw-tile-radius);
+}
+
+.error-text {
+  color: var(--tw-state-critical);
+  font-size: 0.88rem;
+}
+
+.muted {
+  color: var(--tw-text-muted);
+}

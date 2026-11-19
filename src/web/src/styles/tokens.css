@@ -1,0 +1,63 @@
+/*
+ * Tilewright Theme Design Tokens (Light & Dark)
+ * Passed through into Shadow DOM of Web Component tiles.
+ */
+
+:root,
+[data-theme="light"] {
+  --tw-bg: #eef2f6;
+  --tw-surface-rgb: 255, 255, 255;
+  --tw-tile-opacity: 0.9;
+  --tw-surface: rgba(var(--tw-surface-rgb), var(--tw-tile-opacity));
+  --tw-surface-solid: #ffffff;
+  --tw-surface-elevated: #f8fafc;
+  --tw-text: #0f172a;
+  --tw-text-muted: #475569;
+  --tw-accent: #2563eb;
+  --tw-accent-contrast: #ffffff;
+  --tw-border: rgba(15, 23, 42, 0.12);
+
+  --tw-state-normal: #16a34a;
+  --tw-state-warning: #d97706;
+  --tw-state-critical: #dc2626;
+
+  --tw-tile-radius: 16px;
+  --tw-tile-border: 1px solid var(--tw-border);
+  --tw-tile-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --tw-tile-blur: 0px;
+
+  --tw-font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --tw-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --tw-font-size-base: 16px;
+  --tw-tile-padding: 14px;
+  --tw-grid-gap: 10px;
+
+  --tw-chrome-bg: rgba(255, 255, 255, 0.92);
+  --tw-modal-backdrop: rgba(15, 23, 42, 0.45);
+}
+
+[data-theme="dark"] {
+  --tw-bg: #0b1120;
+  --tw-surface-rgb: 30, 41, 59;
+  --tw-tile-opacity: 0.88;
+  --tw-surface: rgba(var(--tw-surface-rgb), var(--tw-tile-opacity));
+  --tw-surface-solid: #1e293b;
+  --tw-surface-elevated: #273449;
+  --tw-text: #f1f5f9;
+  --tw-text-muted: #94a3b8;
+  --tw-accent: #38bdf8;
+  --tw-accent-contrast: #0b1120;
+  --tw-border: rgba(148, 163, 184, 0.2);
+
+  --tw-state-normal: #22c55e;
+  --tw-state-warning: #f59e0b;
+  --tw-state-critical: #f87171;
+
+  --tw-tile-radius: 16px;
+  --tw-tile-border: 1px solid var(--tw-border);
+  --tw-tile-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --tw-tile-blur: 0px;
+
+  --tw-chrome-bg: rgba(15, 23, 42, 0.92);
+  --tw-modal-backdrop: rgba(0, 0, 0, 0.65);
+}

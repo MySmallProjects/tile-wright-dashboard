@@ -122,7 +122,49 @@ Server listens on `http://localhost:5050` with Swagger UI at `http://localhost:5
 - [ ] **Swagger & SignalR hub:** Open `http://localhost:5050/swagger` and confirm all endpoints are documented; authenticated SignalR clients can connect to `/hubs/dashboard` and invoke `Ping()`.
 
 ## Phase 3: Frontend Shell
-*(Checklist will be detailed at the end of Phase 3.)*
+
+Build the Svelte frontend into `wwwroot` and start the .NET server:
+```bash
+npm --prefix src/web run build
+dotnet run --project src/Tilewright.Server
+```
+Open `http://localhost:5050` in your desktop browser and on your tablet (`http://<your-pc-ip>:5050`).
+
+### 3.1 First-Run, Login, Sessions & Auto-Login
+- [ ] **First-run admin setup:** With an empty `src/Tilewright.Server/data` folder, open `http://localhost:5050`.
+  - *Expected:* One-time Admin Setup screen appears. Creating the admin logs you in and opens your empty "Home" dashboard.
+- [ ] **Stay logged in across refresh and server restart:** Refresh the browser, then stop and restart `dotnet run` and refresh again.
+  - *Expected:* You remain logged in without seeing the login screen.
+- [ ] **User-list login (password & passwordless):** Open Settings → **Site & Users**, add a user without a password (e.g. "Tablet") and a user with a password. Log out.
+  - *Expected:* Login screen shows all users. Tapping "Tablet" logs straight in; tapping a password-protected user prompts for their password.
+- [ ] **Auto-login per device:** As admin, enable **Auto-login** in Site Settings, log in as the passwordless user, clear the session cookie (or simulate fresh browser), and reload.
+  - *Expected:* Logs straight back in as the remembered user on that device. Clicking Logout forgets the device's auto-login choice.
+
+### 3.2 Dashboard View, Edit Mode (Done/Cancel) & Layout
+- [ ] **Empty dashboard prompt:** On a fresh dashboard, observe the empty-state prompt.
+  - *Expected:* Prompts you into Edit Mode with a clear **+ Add Tiles** button.
+- [ ] **Edit mode & free-placement canvas (Variation C):** Click **Edit**, add a **Clock** and a **Note** tile, drag them to open positions (gaps preserved when Auto-arrange is off), resize them, and click **Done**. Refresh the page.
+  - *Expected:* Positions and sizes persist across reload; default grid is 64px column width, 64px cell height, 10px gap.
+- [ ] **Edit mode Cancel reverts layout but keeps tile data:** In View mode, type text into the **Note** tile (wait ~1s or blur). Enter **Edit** mode, move/resize tiles, and click **Cancel**.
+  - *Expected:* Tile positions/sizes revert to before Edit mode, while the note text remains saved.
+- [ ] **Tile content locked in Edit mode:** In Edit mode, try typing in the Note tile.
+  - *Expected:* Tile content ignores pointer input (`pointer-events: none`); only the tile toolbar and resize handles respond.
+- [ ] **Delete confirmation:** In Edit mode, click `✕` on a tile.
+  - *Expected:* Prompts for confirmation before deleting.
+
+### 3.3 Themes, Icons, Backgrounds & Settings
+- [ ] **Light, Dark & Follow device setting:** Open Settings → **Appearance & Grid** and switch between Light, Dark, and Follow device setting.
+  - *Expected:* Page chrome, tiles, Shadow DOM Web Components, and local MDI SVG icons all update immediately (zero external CDN requests in Network tab).
+- [ ] **Background upload & precedence:** Upload a JPEG/PNG/WebP image in User Settings (or Site Settings), adjust **Dim**, **Blur**, and **Tile opacity**, and toggle **Show tile borders** and **Backdrop blur**.
+  - *Expected:* Image is resized (max 2560px) and re-encoded to WebP on the server, served with immutable cache headers, and displays cleanly.
+- [ ] **Admin vs User permissions:** Log in as a non-admin user and open Settings.
+  - *Expected:* The **Site & Users** tab is hidden; only Appearance & Grid, Account, and Version are shown.
+
+### 3.4 Version Stamping & Mismatch Banner
+- [ ] **Version tab:** Open Settings → **Version**.
+  - *Expected:* Frontend version and Server version both display `0.1.0+<build>` and match when built together.
+- [ ] **Version mismatch banner:** Rebuild `Tilewright.Server` (`dotnet build src/Tilewright.Server/Tilewright.Server.csproj`) without rebuilding `src/web`, restart the server, and reload (or let SignalR reconnect).
+  - *Expected:* Amber **"New version available — Reload"** banner appears at the top of the page, and Settings → Version flags the mismatch.
 
 ## Phase 4: Multiple Dashboards UI
 *(Checklist will be detailed at the end of Phase 4.)*

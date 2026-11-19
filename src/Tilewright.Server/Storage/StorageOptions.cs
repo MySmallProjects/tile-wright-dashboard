@@ -27,6 +27,7 @@ public sealed class StoragePaths
     public string UsersFile => Path.Combine(Root, "users.json");
     public string SessionsFile => Path.Combine(Root, "sessions.json");
     public string SecretsDir => Path.Combine(Root, "secrets");
+    public string SiteBackgroundsDir => Path.Combine(Root, "site-backgrounds");
     public string UsersDir => Path.Combine(Root, "users");
     public string AddonsDataDir => Path.Combine(Root, "addons");
     public string AddonsInstalledDir => Path.Combine(Root, "addons-installed");
@@ -70,6 +71,18 @@ public sealed class StoragePaths
         return EnsureContained(Path.Combine(DashboardDataDir(userId, dashboardId), $"{tileId}.json"));
     }
 
+    public string UserBackgroundFile(string userId, string imageId)
+    {
+        SafeId.Validate(imageId, nameof(imageId));
+        return EnsureContained(Path.Combine(UserBackgroundsDir(userId), $"{imageId}.webp"));
+    }
+
+    public string SiteBackgroundFile(string imageId)
+    {
+        SafeId.Validate(imageId, nameof(imageId));
+        return EnsureContained(Path.Combine(SiteBackgroundsDir, $"{imageId}.webp"));
+    }
+
     public string EnsureContained(string path)
     {
         var full = Path.GetFullPath(path);
@@ -87,6 +100,7 @@ public sealed class StoragePaths
     {
         Directory.CreateDirectory(Root);
         Directory.CreateDirectory(SecretsDir);
+        Directory.CreateDirectory(SiteBackgroundsDir);
         Directory.CreateDirectory(UsersDir);
         Directory.CreateDirectory(AddonsDataDir);
         Directory.CreateDirectory(AddonsInstalledDir);

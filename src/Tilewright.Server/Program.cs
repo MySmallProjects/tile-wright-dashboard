@@ -106,9 +106,13 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapSiteEndpoints();
 app.MapDashboardEndpoints();
+app.MapBackgroundEndpoints();
 
 // SignalR live push hub
 app.MapHub<DashboardHub>("/hubs/dashboard");
+
+// SPA fallback to index.html for client-side routes (non-API)
+app.MapFallbackToFile("index.html");
 
 var versionInfo = app.Services.GetRequiredService<VersionService>().Current;
 var storagePaths = app.Services.GetRequiredService<StoragePaths>();

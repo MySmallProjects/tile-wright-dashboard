@@ -9,11 +9,11 @@ Work proceeds one phase at a time. Each phase is complete when its **Done when**
   - **Outcome:** Selected **Variation C (Free-Placement Canvas)** with defaults **64px col width, 64px cell height, 10px gap**, and **Svelte 5 + TypeScript + Vite** for Phase 3.
 - **Done when:** All items in [Testing — Phase 1](testing.md#phase-1-prototype) pass across desktop and tablet (and phone if available), a winning Layout Lab variation is selected, and the frontend approach is agreed.
 
-## Phase 2: Backend Skeleton — *Built (Awaiting Verification)*
+## Phase 2: Backend Skeleton — *Complete*
 - **Scope:** .NET 10 solution (`Tilewright.Server`, `Tilewright.Server.Tests`), JSON storage with atomic writes and in-memory cache, users, first-run admin setup, persistent sessions, roles, HTTP/HTTPS detection via forwarded headers, dashboards model (list per user), git-independent versioning (`version.props`, `build-number.txt`, `GET /api/version`), Swagger in dev, SignalR hub, and xUnit tests.
 - **Done when:** All items in [Testing — Phase 2](testing.md#phase-2-backend-skeleton) and xUnit tests pass.
 
-## Phase 3: Frontend Shell — *Pending*
+## Phase 3: Frontend Shell — *Built (Awaiting Verification)*
 - **Scope:** Chosen frontend stack building to `wwwroot`. Login, user list, first-run setup, dashboard view, edit mode (Done/Cancel), Gridstack layout using the winning Lab variation, Light/Dark themes, icons, backgrounds (with server-side resize/re-encode), site/user settings, and version-mismatch reload banner.
 - **Done when:** All items in [Testing — Phase 3](testing.md#phase-3-frontend-shell) pass.
 

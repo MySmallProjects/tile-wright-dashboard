@@ -15,17 +15,26 @@
 
 ## Quick Start
 
-### Backend Server (Phase 2 — .NET 10)
+### Backend & Frontend (Phase 3 — .NET 10 + Svelte 5)
 
 ```bash
+npm --prefix src/web install
+npm --prefix src/web run build
 dotnet test src/Tilewright.sln
 dotnet run --project src/Tilewright.Server
 ```
 
+- **App UI:** `http://localhost:5050/` (served statically from `wwwroot`, no Node needed at runtime)
 - **API & Swagger UI (dev):** `http://localhost:5050/swagger`
 - **Version endpoint:** `http://localhost:5050/api/version`
 - **SignalR hub:** `http://localhost:5050/hubs/dashboard`
 - **Dev data folder:** `src/Tilewright.Server/data/` (gitignored)
+
+For hot-reloading frontend development alongside `dotnet run`:
+```bash
+npm --prefix src/web run dev
+```
+(Proxies `/api` and `/hubs` to `http://localhost:5050`.)
 
 ### Phase 1 Prototype (Disposable Layout Lab & Harness)
 
