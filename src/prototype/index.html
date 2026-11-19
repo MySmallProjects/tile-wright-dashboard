@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tilewright — Phase 1 Layout Lab (Prototype)</title>
+  <link rel="stylesheet" href="vendor/gridstack.min.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/lab.css">
+</head>
+<body>
+  <div class="bg-layer" id="bgLayer"></div>
+  <div class="bg-dim" id="bgDim"></div>
+
+  <div class="app-shell" id="appShell">
+    <div class="proto-banner">
+      <span><strong>DISPOSABLE PROTOTYPE (Phase 1)</strong> — Layout Lab using offline-bundled Gridstack v14.1.1 (no CDN).</span>
+      <span><a href="harness.html">Open API / Tile Harness →</a></span>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="brand">Tilewright</span>
+        <span class="dashboard-title" id="dashboardTitle">Home</span>
+        <span class="meta-pill" id="gridMeta">Cols: --</span>
+      </div>
+      <div class="topbar-right">
+        <button type="button" id="toggleControlsBtn" aria-expanded="true">Lab Controls</button>
+        <button type="button" id="themeBtn" aria-label="Toggle Light or Dark theme">Dark Mode</button>
+        <button type="button" id="editModeBtn" class="primary">Edit Dashboard</button>
+      </div>
+    </header>
+
+    <div class="edit-bar" id="editBar">
+      <div>
+        <strong>Edit Mode</strong> — Drag toolbars to move, drag corners to resize. Tile content is locked.
+      </div>
+      <div class="topbar-right">
+        <button type="button" id="addDefaultTileBtn">+ Add Default Tile</button>
+        <button type="button" id="cancelEditBtn">Cancel</button>
+        <button type="button" id="doneEditBtn" class="primary">Done</button>
+      </div>
+    </div>
+
+    <section class="controls-panel" id="controlsPanel" aria-label="Layout Lab Controls">
+      <div class="control-group">
+        <h3>1. Layout Variation</h3>
+        <div class="control-row">
+          <select id="variationSelect" aria-label="Layout variation">
+            <option value="A">A: Fixed-Width Centred (§6.4)</option>
+            <option value="B">B: Fluid Full-Width Breakpoints</option>
+            <option value="C">C: Free-Placement Canvas (Float)</option>
+            <option value="D">D: Strict Flow-Order + Pinned Slots</option>
+          </select>
+        </div>
+        <div class="variation-desc" id="variationDesc"></div>
+      </div>
+
+      <div class="control-group">
+        <h3>2. Grid Dimensions</h3>
+        <div class="control-row">
+          <label for="colWidthRange">Column width (<span id="colWidthVal">200</span>px)</label>
+          <input type="range" id="colWidthRange" min="64" max="300" step="4" value="200">
+        </div>
+        <div class="control-row">
+          <label for="cellHeightRange">Cell height (<span id="cellHeightVal">110</span>px)</label>
+          <input type="range" id="cellHeightRange" min="32" max="170" step="2" value="110">
+        </div>
+        <div class="control-row">
+          <label for="gapRange">Gap (<span id="gapVal">12</span>px)</label>
+          <input type="range" id="gapRange" min="4" max="28" step="2" value="12">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>3. Snapping &amp; Packing</h3>
+        <div class="control-row">
+          <label><input type="checkbox" id="moveSnapChk" checked> Move snapping (column align)</label>
+        </div>
+        <div class="control-row">
+          <label><input type="checkbox" id="resizeSnapChk" checked> Resize snapping (0.5 or whole cols)</label>
+        </div>
+        <div class="control-row">
+          <label><input type="checkbox" id="autoArrangeChk"> Auto-arrange (dense pack)</label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h3>4. Add Tiles (Edit Mode)</h3>
+        <div class="preset-row">
+          <button type="button" data-add-preset="default">+ Default (1×1)</button>
+          <button type="button" data-add-preset="half">+ Half (0.5×1)</button>
+          <button type="button" data-add-preset="wide">+ Wide (2×1)</button>
+          <button type="button" data-add-preset="large">+ Large (2×2)</button>
+        </div>
+        <div class="variation-desc">Base cell = 0.5 column. Presets add tiles to the current dashboard.</div>
+      </div>
+
+      <div class="control-group">
+        <h3>5. Background &amp; Tablet Legibility</h3>
+        <div class="control-row">
+          <label for="bgSelect">Background</label>
+          <select id="bgSelect">
+            <option value="none">Theme Default</option>
+            <option value="solid">Solid Slate</option>
+            <option value="image" selected>Bundled Wallpaper</option>
+          </select>
+        </div>
+        <div class="control-row">
+          <label for="dimRange">Dim (<span id="dimVal">25</span>%)</label>
+          <input type="range" id="dimRange" min="0" max="75" step="5" value="25">
+        </div>
+        <div class="control-row">
+          <label for="opacityRange">Tile opacity (<span id="opacityVal">88</span>%)</label>
+          <input type="range" id="opacityRange" min="10" max="100" step="5" value="88">
+        </div>
+        <div class="control-row">
+          <label><input type="checkbox" id="blurChk"> Backdrop blur (test tablet FPS)</label>
+        </div>
+        <div class="control-row">
+          <label><input type="checkbox" id="tileBorderChk" checked> Show tile border</label>
+        </div>
+      </div>
+    </section>
+
+    <main class="stage" id="stage">
+      <div class="grid-outer" id="gridOuter">
+        <div class="grid-stack" id="gridStack"></div>
+      </div>
+    </main>
+
+    <nav class="pager-bar" aria-label="Dashboard switcher">
+      <button type="button" class="icon-btn" id="prevDashBtn" aria-label="Previous dashboard">‹</button>
+      <div class="page-dots" id="pageDots"></div>
+      <button type="button" class="icon-btn" id="nextDashBtn" aria-label="Next dashboard">›</button>
+      <span class="pager-hint" id="pagerHint">Swipe in view mode</span>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="vendor/gridstack-all.js"></script>
+  <script type="module" src="js/lab.js"></script>
+</body>
+</html>

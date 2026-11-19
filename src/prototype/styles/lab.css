@@ -1,0 +1,444 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--tw-font-family);
+  font-size: var(--tw-font-size-base);
+  color: var(--tw-text);
+  background-color: var(--tw-bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Background layer with dim/brighten overlay */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--tw-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.bg-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Disposable prototype banner */
+.proto-banner {
+  background: var(--tw-banner-bg);
+  color: var(--tw-banner-text);
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--tw-border);
+}
+
+.proto-banner a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--tw-chrome-bg);
+  border-bottom: 1px solid var(--tw-border);
+  flex-wrap: wrap;
+}
+
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-title {
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--tw-surface-elevated);
+  border: 1px solid var(--tw-border);
+  font-size: 0.9rem;
+}
+
+.meta-pill {
+  font-size: 0.78rem;
+  color: var(--tw-text-muted);
+  font-family: var(--tw-font-mono);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--tw-border);
+  background: var(--tw-surface-elevated);
+}
+
+/* Touch-friendly buttons */
+button,
+.btn {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--tw-border);
+  background: var(--tw-surface-solid);
+  color: var(--tw-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  touch-action: manipulation;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button.primary {
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  border-color: transparent;
+}
+
+button.danger {
+  background: var(--tw-state-critical);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+button.icon-btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 0.85rem;
+}
+
+/* Collapsible Lab Controls Drawer */
+.controls-panel {
+  background: var(--tw-chrome-bg);
+  border-bottom: 1px solid var(--tw-border);
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px 18px;
+}
+
+.controls-panel.collapsed {
+  display: none;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--tw-surface-elevated);
+  border: 1px solid var(--tw-border);
+}
+
+.control-group h3 {
+  margin: 0 0 2px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tw-text-muted);
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.86rem;
+}
+
+.control-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.control-row input[type="range"] {
+  width: 110px;
+  accent-color: var(--tw-accent);
+}
+
+.control-row select {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--tw-border);
+  background: var(--tw-surface-solid);
+  color: var(--tw-text);
+  max-width: 100%;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-row button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+}
+
+.variation-desc {
+  font-size: 0.8rem;
+  color: var(--tw-text-muted);
+  line-height: 1.35;
+}
+
+/* Dashboard viewport & swipe container */
+.stage {
+  flex: 1;
+  padding: 16px 12px 72px;
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+.grid-outer {
+  margin: 0 auto;
+  transition: width 0.15s ease;
+}
+
+/* Gridstack tile styling */
+.grid-stack-item-content {
+  background: var(--tw-surface);
+  border: var(--tw-tile-border);
+  border-radius: var(--tw-tile-radius);
+  box-shadow: var(--tw-tile-shadow);
+  backdrop-filter: blur(var(--tw-tile-blur));
+  -webkit-backdrop-filter: blur(var(--tw-tile-blur));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+}
+
+/* Edit mode tile toolbar */
+.tile-toolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--tw-surface-elevated);
+  border-bottom: 1px solid var(--tw-border);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.is-edit-mode .tile-toolbar {
+  display: flex;
+}
+
+.tile-toolbar-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pin-badge {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  font-weight: 600;
+}
+
+.pin-badge.fallback {
+  background: var(--tw-state-warning);
+  color: #ffffff;
+}
+
+.tile-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tile-toolbar-actions button {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+  border-radius: 7px;
+}
+
+.tile-toolbar-actions button.active-pin {
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  border-color: transparent;
+}
+
+.tile-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Rule §4.4: Tile content is non-interactive in edit mode */
+.is-edit-mode .tile-body {
+  pointer-events: none;
+  user-select: none;
+}
+
+.is-edit-mode .grid-stack-item-content {
+  outline: 2px dashed rgba(37, 99, 235, 0.45);
+  outline-offset: -2px;
+}
+
+.is-edit-mode .grid-stack-item[data-pinned="true"] .grid-stack-item-content {
+  outline-style: solid;
+  outline-color: var(--tw-accent);
+}
+
+/* Gridstack placeholder highlight */
+.grid-stack-placeholder > .placeholder-content {
+  background: rgba(37, 99, 235, 0.18) !important;
+  border: 2px dashed var(--tw-accent) !important;
+  border-radius: var(--tw-tile-radius);
+}
+
+/* Bottom page dots & dashboard switcher */
+.pager-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--tw-chrome-bg);
+  border: 1px solid var(--tw-border);
+  box-shadow: var(--tw-tile-shadow);
+}
+
+.page-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-dot {
+  width: 10px;
+  height: 10px;
+  min-height: 10px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: var(--tw-text-muted);
+  opacity: 0.4;
+}
+
+.page-dot.active {
+  width: 24px;
+  background: var(--tw-accent);
+  opacity: 1;
+}
+
+.pager-hint {
+  font-size: 0.78rem;
+  color: var(--tw-text-muted);
+}
+
+/* Edit mode status bar */
+.edit-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--tw-accent);
+  color: var(--tw-accent-contrast);
+  flex-wrap: wrap;
+}
+
+.is-edit-mode .edit-bar {
+  display: flex;
+}
+
+.edit-bar button {
+  min-height: 36px;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--tw-surface-solid);
+  color: var(--tw-text);
+  border: 1px solid var(--tw-border);
+  box-shadow: var(--tw-tile-shadow);
+  font-size: 0.86rem;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}

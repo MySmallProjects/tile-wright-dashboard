@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tilewright — API &amp; Tile Contract Harness (Dev Tools)</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/lab.css">
+  <style>
+    .harness-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      max-width: 1320px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .panel {
+      background: var(--tw-surface-solid);
+      border: 1px solid var(--tw-border);
+      border-radius: var(--tw-tile-radius);
+      box-shadow: var(--tw-tile-shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .panel-sub {
+      margin: -6px 0 0;
+      font-size: 0.82rem;
+      color: var(--tw-text-muted);
+    }
+    .user-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.88rem;
+      flex-wrap: wrap;
+    }
+    .field-row input[type="text"],
+    .field-row input[type="password"],
+    .field-row select {
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--tw-border);
+      background: var(--tw-surface-elevated);
+      color: var(--tw-text);
+    }
+    .tile-stage {
+      height: 180px;
+      border-radius: var(--tw-tile-radius);
+      border: var(--tw-tile-border);
+      background: var(--tw-surface);
+      box-shadow: var(--tw-tile-shadow);
+      overflow: hidden;
+      display: flex;
+    }
+    .tile-stage.is-edit {
+      outline: 2px dashed var(--tw-accent);
+      pointer-events: none;
+    }
+    .log-box {
+      font-family: var(--tw-font-mono);
+      font-size: 0.78rem;
+      background: var(--tw-surface-elevated);
+      border: 1px solid var(--tw-border);
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 130px;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--tw-state-critical);
+      margin-right: 6px;
+    }
+    .status-dot.ok {
+      background: var(--tw-state-normal);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="proto-banner">
+      <span><strong>DEV TOOLS — API &amp; Tile Harness (Phase 1 Mock Transport)</strong> — Kept as dev tools; wires to .NET API &amp; SignalR in Phase 2.</span>
+      <span><a href="index.html">← Back to Layout Lab</a></span>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="brand">Tilewright Harness</span>
+        <span class="meta-pill" id="transportPill">Transport: In-Browser Mock</span>
+      </div>
+      <div class="topbar-right">
+        <button type="button" id="themeToggleBtn">Dark Mode</button>
+      </div>
+    </header>
+
+    <main class="harness-grid">
+      <!-- 1. Mock Login & Cookie Flow -->
+      <section class="panel">
+        <h2>1. Login &amp; Cookie Flow (Mock)</h2>
+        <p class="panel-sub">Click a user. Admin requires password <code>admin</code>; Wall Tablet has no password. Session persists across reload.</p>
+
+        <div class="user-list" id="userList">
+          <button type="button" data-login-user="admin">Admin (password)</button>
+          <button type="button" data-login-user="tablet">Wall Tablet (no password)</button>
+          <button type="button" id="logoutBtn" class="danger">Logout</button>
+        </div>
+
+        <div class="field-row" id="passwordRow" style="display: none;">
+          <label for="passwordInput">Password for Admin:</label>
+          <input type="password" id="passwordInput" placeholder="admin">
+          <button type="button" id="submitPwBtn" class="primary">Sign In</button>
+        </div>
+
+        <div class="field-row">
+          <label><input type="checkbox" id="simHttpsChk"> Simulate HTTPS (<code>__Host-</code> + <code>Secure</code>)</label>
+        </div>
+
+        <div class="log-box" id="sessionBox">Not signed in.</div>
+      </section>
+
+      <!-- 2. Simulated SignalR Push -->
+      <section class="panel">
+        <h2>2. SignalR Push Stream (Mock)</h2>
+        <p class="panel-sub">Simulates server-pushed tile data and reconnect version checks.</p>
+
+        <div class="field-row">
+          <span><span class="status-dot" id="hubDot"></span><strong id="hubStatus">Disconnected</strong></span>
+          <div>
+            <button type="button" id="connectHubBtn" class="primary">Connect</button>
+            <button type="button" id="disconnectHubBtn">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <input type="text" id="pushPayloadInput" value="Synced from server (mock)" style="flex: 1;">
+          <button type="button" id="sendPushBtn">Push to Tile</button>
+        </div>
+
+        <div class="log-box" id="hubLog"></div>
+      </section>
+
+      <!-- 3. Clock Web Component Tile Contract -->
+      <section class="panel" style="grid-column: 1 / -1;">
+        <h2>3. Web Component Tile Contract (<code>&lt;tw-clock-tile&gt;</code>)</h2>
+        <p class="panel-sub">Proves Shadow DOM theming via CSS custom properties, <code>settings</code>/<code>data</code>/<code>context</code> inputs, Needs Setup placeholder, Edit mode lockout, and bubbling custom events.</p>
+
+        <div class="field-row">
+          <label>Mode:
+            <select id="tileModeSelect">
+              <option value="view">view (interactive)</option>
+              <option value="edit">edit (pointer-events: none)</option>
+            </select>
+          </label>
+          <label>Format:
+            <select id="hourFormatSelect">
+              <option value="24">24-hour</option>
+              <option value="12">12-hour</option>
+            </select>
+          </label>
+          <label>Date tokens:
+            <input type="text" id="dateFormatInput" value="dddd dd MMM yyyy" size="20">
+          </label>
+          <label><input type="checkbox" id="showSecondsChk" checked> Show seconds</label>
+          <label><input type="checkbox" id="needsSetupChk"> Needs setup</label>
+        </div>
+
+        <div class="tile-stage" id="tileStage">
+          <tw-clock-tile id="clockTile"></tw-clock-tile>
+        </div>
+
+        <div>
+          <strong>Tile Event Log (<code>settings-changed</code> / <code>request-action</code>):</strong>
+          <div class="log-box" id="eventLog" style="margin-top: 6px;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/harness.js"></script>
+</body>
+</html>
