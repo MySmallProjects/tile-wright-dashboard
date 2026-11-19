@@ -8,14 +8,17 @@
     resolveEffectiveBackground
   } from './lib/theme';
   import type {
-    AuthStatus,
     DashboardDetail,
+    DashboardSummary,
     PublicUser,
     SiteSettings,
     UserSettings,
     VersionInfo
   } from './types';
   import DashboardGrid from './components/DashboardGrid.svelte';
+  import DashboardManagerModal from './components/DashboardManagerModal.svelte';
+  import DashboardPager from './components/DashboardPager.svelte';
+  import DashboardSwitcher from './components/DashboardSwitcher.svelte';
   import FirstRunSetup from './components/FirstRunSetup.svelte';
   import Icon from './components/Icon.svelte';
   import LoginScreen from './components/LoginScreen.svelte';
@@ -23,6 +26,7 @@
   import VersionBanner from './components/VersionBanner.svelte';
 
   const AUTOLOGIN_KEY = 'tw_autologin_user_id';
+  const lastDashboardKey = (userId: string) => `tw_last_dashboard_${userId}`;
   const frontendVersion = __APP_VERSION__;
 
   const hub = new DashboardHubClient();
@@ -46,16 +50,21 @@
     autoArrange: false,
     tileOpacity: 88,
     tileBorder: true,
-    backdropBlur: false
+    backdropBlur: false,
+    dashboardInfiniteCycle: true
   });
+  let dashboards = $state<DashboardSummary[]>([]);
+  let enabledDashboards = $derived(dashboards.filter((d) => d.enabled !== false));
   let activeDashboard = $state<DashboardDetail | null>(null);
   let editMode = $state(false);
   let showSettings = $state(false);
+  let showDashboardManager = $state(false);
   let serverVersionInfo = $state<VersionInfo | null>(null);
   let serverVersion = $state<string | null>(null);
   let hubConnected = $state(false);
   let toastMsg = $state('');
   let toastTimer: number | null = null;
+  let swipeStart: { x: number; y: number; time: number } | null = null;
 
   function notify(msg: string) {
     toastMsg = msg;
@@ -74,7 +83,6 @@
   );
   let bgStyles = $derived(buildBackgroundStyles(effectiveBg));
 
-  // Keep theme & tile CSS custom properties synced
   $effect(() => {
     const themePref = currentUser ? userSettings.theme : siteSettings.defaultTheme;
     applyThemeAndSurface(themePref, currentUser ? userSettings : null);
@@ -90,20 +98,71 @@
     }
   }
 
+  async function selectDashboard(id: string) {
+    if (editMode || !currentUser) return;
+    try {
+      const detail = await api.getDashboard(id);
+      activeDashboard = detail;
+      localStorage.setItem(lastDashboardKey(currentUser.id), detail.summary.id);
+    } catch {
+      notify('Could not load dashboard.');
+    }
+  }
+
+  function stepDashboard(delta: number) {
+    if (editMode || enabledDashboards.length <= 1 || !activeDashboard) return;
+    const idx = enabledDashboards.findIndex((d) => d.id === activeDashboard?.summary.id);
+    if (idx < 0) return;
+
+    if (userSettings.dashboardInfiniteCycle !== false) {
+      const nextIdx = (idx + delta + enabledDashboards.length) % enabledDashboards.length;
+      void selectDashboard(enabledDashboards[nextIdx].id);
+    } else {
+      const nextIdx = idx + delta;
+      if (nextIdx >= 0 && nextIdx < enabledDashboards.length) {
+        void selectDashboard(enabledDashboards[nextIdx].id);
+      }
+    }
+  }
+
+  async function handleDashboardsChanged(nextList: DashboardSummary[], switchToId?: string) {
+    dashboards = nextList;
+    const nextEnabled = nextList.filter((d) => d.enabled !== false);
+    const currentStillEnabled =
+      activeDashboard && nextEnabled.some((d) => d.id === activeDashboard?.summary.id);
+    const targetId =
+      switchToId ??
+      (currentStillEnabled ? activeDashboard!.summary.id : nextEnabled[0]?.id ?? nextList[0]?.id);
+
+    if (targetId) {
+      await selectDashboard(targetId);
+    } else {
+      activeDashboard = null;
+    }
+  }
+
   async function loadUserWorkspace(user: PublicUser) {
     currentUser = user;
     if (!user.hasPassword) {
       localStorage.setItem(AUTOLOGIN_KEY, user.id);
     }
 
-    const [uSettings, dashboards] = await Promise.all([
+    const [uSettings, list] = await Promise.all([
       api.getUserSettings(),
       api.listDashboards()
     ]);
 
     userSettings = uSettings;
-    if (dashboards.length > 0) {
-      activeDashboard = await api.getDashboard(dashboards[0].id);
+    dashboards = list;
+
+    const enabled = list.filter((d) => d.enabled !== false);
+    if (enabled.length > 0) {
+      const rememberedId = localStorage.getItem(lastDashboardKey(user.id));
+      const initialId = enabled.some((d) => d.id === rememberedId) ? rememberedId! : enabled[0].id;
+      activeDashboard = await api.getDashboard(initialId);
+      localStorage.setItem(lastDashboardKey(user.id), activeDashboard.summary.id);
+    } else if (list.length > 0) {
+      activeDashboard = await api.getDashboard(list[0].id);
     } else {
       activeDashboard = null;
     }
@@ -165,13 +224,50 @@
       // ignore
     }
     currentUser = null;
+    dashboards = [];
     activeDashboard = null;
     editMode = false;
     showSettings = false;
+    showDashboardManager = false;
+  }
+
+  // Horizontal swipe gesture (view mode only, ignores inputs/textareas including Shadow DOM)
+  function isInteractiveTarget(e: PointerEvent): boolean {
+    const path = e.composedPath();
+    for (const node of path) {
+      if (node instanceof HTMLElement) {
+        const tag = node.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'A') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    if (editMode || showSettings || showDashboardManager || enabledDashboards.length <= 1) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (isInteractiveTarget(e)) return;
+    swipeStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    if (!swipeStart) return;
+    const dx = e.clientX - swipeStart.x;
+    const dy = e.clientY - swipeStart.y;
+    const dt = Date.now() - swipeStart.time;
+    swipeStart = null;
+
+    if (editMode || showSettings || showDashboardManager || enabledDashboards.length <= 1) return;
+    if (dt < 600 && Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      stepDashboard(dx < 0 ? 1 : -1);
+    }
   }
 
   onMount(() => {
     void boot();
+
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
     const onSchemeChange = () => {
       const themePref = currentUser ? userSettings.theme : siteSettings.defaultTheme;
@@ -180,7 +276,25 @@
       }
     };
     mq?.addEventListener('change', onSchemeChange);
-    return () => mq?.removeEventListener('change', onSchemeChange);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (editMode || showSettings || showDashboardManager || !currentUser || enabledDashboards.length <= 1) return;
+      const activeEl = document.activeElement;
+      if (activeEl instanceof HTMLElement) {
+        const tag = activeEl.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || activeEl.isContentEditable) return;
+        // Also skip if a shadow host (e.g. tw-note-tile) has an active textarea focused
+        if (activeEl.shadowRoot?.activeElement?.tagName === 'TEXTAREA') return;
+      }
+      if (e.key === 'ArrowRight') stepDashboard(1);
+      if (e.key === 'ArrowLeft') stepDashboard(-1);
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      mq?.removeEventListener('change', onSchemeChange);
+      window.removeEventListener('keydown', onKeyDown);
+    };
   });
 
   onDestroy(() => {
@@ -203,8 +317,13 @@
   {:else}
     <header class="topbar">
       <div class="topbar-left">
-        <Icon name={activeDashboard?.summary.icon || 'view-dashboard'} size={22} />
-        <span class="dash-name">{activeDashboard?.summary.name || 'Tilewright'}</span>
+        <DashboardSwitcher
+          dashboards={enabledDashboards}
+          activeId={activeDashboard?.summary.id ?? null}
+          disabled={editMode}
+          onSelect={(id) => void selectDashboard(id)}
+          onManage={() => (showDashboardManager = true)}
+        />
         <span class="hub-dot" class:connected={hubConnected} title={hubConnected ? 'Live connected' : 'Offline / reconnecting'}></span>
       </div>
 
@@ -223,14 +342,43 @@
       </div>
     </header>
 
-    {#if activeDashboard}
-      <DashboardGrid
-        dashboard={activeDashboard}
-        {userSettings}
-        {editMode}
-        onEnterEdit={() => (editMode = true)}
-        onExitEdit={() => (editMode = false)}
-        onDashboardChanged={(updated) => (activeDashboard = updated)}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="dashboard-viewport"
+      onpointerdown={handlePointerDown}
+      onpointerup={handlePointerUp}
+      onpointercancel={() => (swipeStart = null)}
+    >
+      {#if activeDashboard}
+        {#key activeDashboard.summary.id}
+          <DashboardGrid
+            dashboard={activeDashboard}
+            {userSettings}
+            {editMode}
+            onEnterEdit={() => (editMode = true)}
+            onExitEdit={() => (editMode = false)}
+            onDashboardChanged={(updated) => (activeDashboard = updated)}
+            onNotify={notify}
+          />
+        {/key}
+      {/if}
+    </div>
+
+    <DashboardPager
+      dashboards={enabledDashboards}
+      activeId={activeDashboard?.summary.id ?? null}
+      {editMode}
+      infiniteCycle={userSettings.dashboardInfiniteCycle !== false}
+      onSelect={(id) => void selectDashboard(id)}
+    />
+
+    {#if showDashboardManager}
+      <DashboardManagerModal
+        {dashboards}
+        activeId={activeDashboard?.summary.id ?? null}
+        onClose={() => (showDashboardManager = false)}
+        onChanged={(list, nextId) => void handleDashboardsChanged(list, nextId)}
+        onSelect={(id) => void selectDashboard(id)}
         onNotify={notify}
       />
     {/if}
@@ -243,6 +391,10 @@
         {frontendVersion}
         {serverVersionInfo}
         onClose={() => (showSettings = false)}
+        onOpenDashboards={() => {
+          showSettings = false;
+          showDashboardManager = true;
+        }}
         onUserSettingsSaved={(s) => (userSettings = s)}
         onSiteSettingsSaved={(s) => (siteSettings = s)}
         onNotify={notify}
@@ -279,9 +431,12 @@
     align-items: center;
     gap: 8px;
   }
-  .dash-name {
-    font-weight: 700;
-    font-size: 1.05rem;
+  .dashboard-viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    touch-action: pan-y;
+    padding-bottom: 56px;
   }
   .hub-dot {
     width: 8px;
@@ -296,7 +451,7 @@
   }
   .toast {
     position: fixed;
-    bottom: 18px;
+    bottom: 68px;
     right: 18px;
     z-index: 60;
     padding: 10px 14px;

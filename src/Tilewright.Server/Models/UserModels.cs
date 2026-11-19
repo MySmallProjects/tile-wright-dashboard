@@ -41,4 +41,5 @@ public sealed class UserSettings
     public int TileOpacity { get; set; } = 88;
     public bool TileBorder { get; set; } = true;
     public bool BackdropBlur { get; set; } = false;
+    public bool DashboardInfiniteCycle { get; set; } = true;
 }

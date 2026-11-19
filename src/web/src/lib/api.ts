@@ -1,5 +1,6 @@
 import type {
   AuthStatus,
+  BackgroundSettings,
   DashboardDetail,
   DashboardSummary,
   PublicUser,
@@ -108,6 +109,34 @@ export const api = {
   // Dashboards
   listDashboards: () => request<DashboardSummary[]>('/api/dashboards'),
   getDashboard: (id: string) => request<DashboardDetail>(`/api/dashboards/${encodeURIComponent(id)}`),
+  createDashboard: (name: string, icon: string | null) =>
+    request<DashboardSummary>('/api/dashboards', {
+      method: 'POST',
+      body: JSON.stringify({ name, icon })
+    }),
+  updateDashboard: (
+    id: string,
+    name: string,
+    icon: string | null,
+    backgroundOverride: BackgroundSettings | null,
+    enabled?: boolean
+  ) =>
+    request<DashboardSummary>(`/api/dashboards/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, icon, backgroundOverride, enabled })
+    }),
+  reorderDashboards: (orderedIds: string[]) =>
+    request<DashboardSummary[]>('/api/dashboards/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ orderedIds })
+    }),
+  duplicateDashboard: (id: string, name?: string) =>
+    request<DashboardSummary>(`/api/dashboards/${encodeURIComponent(id)}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify({ name: name || null })
+    }),
+  deleteDashboard: (id: string) =>
+    request<void>(`/api/dashboards/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   saveLayout: (id: string, tiles: TileLayoutItem[]) =>
     request<TileLayoutItem[]>(`/api/dashboards/${encodeURIComponent(id)}/layout`, {
       method: 'PUT',

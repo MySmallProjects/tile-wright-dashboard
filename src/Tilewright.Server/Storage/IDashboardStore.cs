@@ -14,6 +14,7 @@ public interface IDashboardStore
         string name,
         string? icon,
         BackgroundSettings? backgroundOverride,
+        bool? enabled = null,
         CancellationToken ct = default);
     Task<IReadOnlyList<DashboardSummary>> ReorderAsync(string userId, IReadOnlyList<string> orderedIds, CancellationToken ct = default);
     Task<DashboardSummary?> DuplicateAsync(string userId, string dashboardId, string? newName = null, CancellationToken ct = default);

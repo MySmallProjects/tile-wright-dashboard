@@ -13,11 +13,11 @@ Work proceeds one phase at a time. Each phase is complete when its **Done when**
 - **Scope:** .NET 10 solution (`Tilewright.Server`, `Tilewright.Server.Tests`), JSON storage with atomic writes and in-memory cache, users, first-run admin setup, persistent sessions, roles, HTTP/HTTPS detection via forwarded headers, dashboards model (list per user), git-independent versioning (`version.props`, `build-number.txt`, `GET /api/version`), Swagger in dev, SignalR hub, and xUnit tests.
 - **Done when:** All items in [Testing — Phase 2](testing.md#phase-2-backend-skeleton) and xUnit tests pass.
 
-## Phase 3: Frontend Shell — *Built (Awaiting Verification)*
+## Phase 3: Frontend Shell — *Complete*
 - **Scope:** Chosen frontend stack building to `wwwroot`. Login, user list, first-run setup, dashboard view, edit mode (Done/Cancel), Gridstack layout using the winning Lab variation, Light/Dark themes, icons, backgrounds (with server-side resize/re-encode), site/user settings, and version-mismatch reload banner.
 - **Done when:** All items in [Testing — Phase 3](testing.md#phase-3-frontend-shell) pass.
 
-## Phase 4: Multiple Dashboards UI — *Pending*
+## Phase 4: Multiple Dashboards UI — *Built (Awaiting Verification)*
 - **Scope:** Horizontal swipe navigation, page dots, switcher menu, create/rename/reorder/duplicate/delete dashboards, unmounting hidden dashboards, and per-device last-viewed dashboard memory.
 - **Done when:** All items in [Testing — Phase 4](testing.md#phase-4-multiple-dashboards-ui) pass.
 

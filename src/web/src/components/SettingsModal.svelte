@@ -17,6 +17,7 @@
     frontendVersion,
     serverVersionInfo,
     onClose,
+    onOpenDashboards,
     onUserSettingsSaved,
     onSiteSettingsSaved,
     onNotify
@@ -27,6 +28,7 @@
     frontendVersion: string;
     serverVersionInfo: VersionInfo | null;
     onClose: () => void;
+    onOpenDashboards?: () => void;
     onUserSettingsSaved: (s: UserSettings) => void;
     onSiteSettingsSaved: (s: SiteSettings) => void;
     onNotify: (msg: string) => void;
@@ -334,9 +336,17 @@
           <div class="row">
             <label><input type="checkbox" bind:checked={draftUser.autoArrange} /> Auto-arrange (dense packing)</label>
           </div>
+          <div class="row">
+            <label><input type="checkbox" bind:checked={draftUser.dashboardInfiniteCycle} /> Infinite cycling through dashboards (wrap at start/end)</label>
+          </div>
         </section>
 
         <div class="footer-actions">
+          {#if onOpenDashboards}
+            <button type="button" onclick={onOpenDashboards}>
+              <Icon name="view-dashboard" size={18} /> Manage Dashboards
+            </button>
+          {/if}
           <button type="button" class="primary" onclick={saveAppearance} disabled={saving}>
             {saving ? 'Saving...' : 'Save Appearance & Grid'}
           </button>

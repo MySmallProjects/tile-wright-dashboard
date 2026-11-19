@@ -8,7 +8,7 @@ namespace Tilewright.Server.Endpoints;
 public static class DashboardEndpoints
 {
     public sealed record CreateDashboardRequest(string Name, string? Icon);
-    public sealed record UpdateDashboardRequest(string Name, string? Icon, BackgroundSettings? BackgroundOverride);
+    public sealed record UpdateDashboardRequest(string Name, string? Icon, BackgroundSettings? BackgroundOverride, bool? Enabled = null);
     public sealed record ReorderDashboardsRequest(List<string> OrderedIds);
     public sealed record DuplicateDashboardRequest(string? Name);
     public sealed record SaveLayoutRequest(List<TileLayoutItem> Tiles);
@@ -57,7 +57,19 @@ public static class DashboardEndpoints
         {
             if (!SafeId.IsValid(id)) return Results.BadRequest(new { error = "Invalid dashboard id." });
             var userId = GetUserId(http);
-            var updated = await store.UpdateMetadataAsync(userId, id, req.Name, req.Icon, req.BackgroundOverride, ct);
+
+            if (req.Enabled == false)
+            {
+                var all = await store.ListAsync(userId, ct);
+                var enabledCount = all.Count(d => d.Enabled);
+                var target = all.FirstOrDefault(d => d.Id == id);
+                if (target is not null && target.Enabled && enabledCount <= 1)
+                {
+                    return Results.BadRequest(new { error = "Cannot disable the last enabled dashboard." });
+                }
+            }
+
+            var updated = await store.UpdateMetadataAsync(userId, id, req.Name, req.Icon, req.BackgroundOverride, req.Enabled, ct);
             return updated is null ? Results.NotFound() : Results.Ok(updated);
         });
 
@@ -79,9 +91,17 @@ public static class DashboardEndpoints
             if (!SafeId.IsValid(id)) return Results.BadRequest(new { error = "Invalid dashboard id." });
             var userId = GetUserId(http);
             var all = await store.ListAsync(userId, ct);
-            if (all.Count <= 1 && all.Any(d => d.Id == id))
+            var target = all.FirstOrDefault(d => d.Id == id);
+            if (target is null) return Results.NotFound();
+
+            if (all.Count <= 1)
             {
                 return Results.BadRequest(new { error = "Cannot delete the last remaining dashboard." });
+            }
+
+            if (target.Enabled && all.Count(d => d.Enabled) <= 1)
+            {
+                return Results.BadRequest(new { error = "Cannot delete the last enabled dashboard. Enable another dashboard first." });
             }
 
             var deleted = await store.DeleteAsync(userId, id, ct);

@@ -167,7 +167,39 @@ Open `http://localhost:5050` in your desktop browser and on your tablet (`http:/
   - *Expected:* Amber **"New version available — Reload"** banner appears at the top of the page, and Settings → Version flags the mismatch.
 
 ## Phase 4: Multiple Dashboards UI
-*(Checklist will be detailed at the end of Phase 4.)*
+
+Rebuild the frontend (and backend if needed) and open `http://localhost:5050` on desktop and tablet:
+```bash
+dotnet build src/Tilewright.Server/Tilewright.Server.csproj
+npm --prefix src/web run build
+dotnet run --project src/Tilewright.Server --no-build
+```
+
+### 4.1 Dashboard Management (Create, Rename, Reorder, Duplicate, Delete)
+- [ ] **Create dashboards:** Click the dashboard title in the top-left → **Manage Dashboards**, create two new dashboards (e.g. "Kitchen" with an icon, and "Office").
+  - *Expected:* New dashboards appear in the switcher menu and bottom page dots appear.
+- [ ] **Rename, change icon & background override:** In **Manage Dashboards**, edit one dashboard's name, icon, and set a per-dashboard background override (solid colour or uploaded image).
+  - *Expected:* Switching to that dashboard shows its override background; switching back restores your user/site default background.
+- [ ] **Reorder dashboards:** Use the Up/Down arrow buttons in **Manage Dashboards**.
+  - *Expected:* Page dots and switcher menu update to the new order and persist across reload.
+- [ ] **Duplicate dashboard:** Add a Clock and a Note (with text) to a dashboard, then click **Duplicate** in **Manage Dashboards**.
+  - *Expected:* The duplicated dashboard opens with a copy of all tiles and their note text.
+- [ ] **Delete dashboard:** Delete a duplicate dashboard (confirm prompt), and verify the Delete button is disabled when only 1 dashboard remains.
+  - *Expected:* Confirmation prompt appears; deleting switches cleanly to a remaining dashboard.
+- [ ] **Enable / Disable dashboard:** In **Manage Dashboards**, disable one of your dashboards (while at least one other remains enabled).
+  - *Expected:* Disabled dashboard is hidden from the switcher menu, page dots, and swipe navigation, while staying listed in **Manage Dashboards** with an **Enable** button; the last remaining enabled dashboard cannot be disabled.
+
+### 4.2 Switching, Swipe Safety & Per-Device Memory
+- [ ] **Swipe & keyboard switching (View mode):** On tablet (touch swipe left/right) and desktop (click-drag or Left/Right arrow keys or page dots or top-left switcher menu), move between dashboards.
+  - *Expected:* Smoothly switches dashboards; vertical scrolling and typing inside a Note tile do **not** accidentally trigger a swipe.
+- [ ] **Infinite cycling toggle:** In Settings → **Appearance & Grid**, toggle **Infinite cycling through dashboards** off and save, then swipe / press arrows / click `‹` `›` at the first and last dashboards. Turn it back on and repeat.
+  - *Expected:* When **off**, navigation stops at the first and last enabled dashboard (`‹` / `›` buttons disable at the ends); when **on**, it wraps seamlessly from last → first and first → last.
+- [ ] **Swipe disabled in Edit mode:** Enter **Edit** mode on one dashboard and swipe horizontally or press Left/Right arrow keys.
+  - *Expected:* Dashboard does **not** switch; switcher menu is disabled and page dots are hidden; Done/Cancel affects only the current dashboard.
+- [ ] **Hidden dashboards unmounted:** Switch away from a dashboard containing a Clock tile.
+  - *Expected:* Previous `<DashboardGrid>` and `<tw-clock-tile>` are unmounted (no hidden clock intervals running).
+- [ ] **Per-device last-viewed memory:** Switch to your 2nd or 3rd dashboard, then refresh or reopen the browser on that device.
+  - *Expected:* Reopens directly to the last-viewed dashboard on that device.
 
 ## Phase 5: Addon Framework
 *(Checklist will be detailed at the end of Phase 5.)*

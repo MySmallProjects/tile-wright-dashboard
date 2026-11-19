@@ -66,6 +66,7 @@ public sealed class JsonDashboardStore(JsonFileStore files, StoragePaths paths) 
         string name,
         string? icon,
         BackgroundSettings? backgroundOverride,
+        bool? enabled = null,
         CancellationToken ct = default)
     {
         SafeId.Validate(dashboardId, nameof(dashboardId));
@@ -76,6 +77,7 @@ public sealed class JsonDashboardStore(JsonFileStore files, StoragePaths paths) 
             if (!string.IsNullOrWhiteSpace(name)) dash.Name = name.Trim();
             dash.Icon = icon;
             dash.BackgroundOverride = backgroundOverride;
+            if (enabled.HasValue) dash.Enabled = enabled.Value;
             return dash;
         }, ct);
     }
@@ -122,7 +124,7 @@ public sealed class JsonDashboardStore(JsonFileStore files, StoragePaths paths) 
 
         if (source.Summary.BackgroundOverride is not null)
         {
-            await UpdateMetadataAsync(userId, created.Id, created.Name, created.Icon, source.Summary.BackgroundOverride, ct);
+            await UpdateMetadataAsync(userId, created.Id, created.Name, created.Icon, source.Summary.BackgroundOverride, enabled: null, ct: ct);
         }
 
         await files.WriteAsync(

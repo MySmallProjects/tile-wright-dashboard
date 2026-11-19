@@ -44,6 +44,7 @@ export interface UserSettings {
   tileOpacity: number;
   tileBorder: boolean;
   backdropBlur: boolean;
+  dashboardInfiniteCycle: boolean;
 }
 
 export interface DashboardSummary {
@@ -51,6 +52,7 @@ export interface DashboardSummary {
   name: string;
   icon?: string | null;
   order: number;
+  enabled: boolean;
   backgroundOverride?: BackgroundSettings | null;
 }
 
