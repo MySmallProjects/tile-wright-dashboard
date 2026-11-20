@@ -1,0 +1,34 @@
+{
+  "id": "notes",
+  "name": "Notes",
+  "version": "1.0.0",
+  "description": "Post-it style notes stored in tile data with optional in-view editing.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "tiles": [
+      {
+        "id": "notes",
+        "name": "Notes",
+        "description": "Post-it text note; note content is saved independently from layout.",
+        "icon": "note-text-outline",
+        "element": { "tagName": "tw-addon-notes", "script": "notes-tile.js" },
+        "defaultSize": { "w": 4, "h": 3 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 16, "h": 12 },
+        "settingsSchema": [
+          { "key": "title", "label": "Title", "type": "text", "defaultValue": "Note" },
+          { "key": "text", "label": "Default text", "type": "multiline", "defaultValue": "" },
+          { "key": "colour", "label": "Accent colour", "type": "colour", "defaultValue": "#f59e0b" },
+          {
+            "key": "allowViewEdit",
+            "label": "Allow editing in view mode",
+            "type": "toggle",
+            "defaultValue": false,
+            "helpText": "When enabled, tapping the note edits in place and auto-saves."
+          }
+        ]
+      }
+    ]
+  }
+}

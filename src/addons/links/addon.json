@@ -1,0 +1,47 @@
+{
+  "id": "links",
+  "name": "Links",
+  "version": "1.0.0",
+  "description": "Quick links tile with customisable layout and repeating link rows.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "tiles": [
+      {
+        "id": "links",
+        "name": "Links",
+        "description": "One tile holding multiple clickable links.",
+        "icon": "view-dashboard",
+        "element": { "tagName": "tw-addon-links", "script": "links-tile.js" },
+        "defaultSize": { "w": 4, "h": 3 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 16, "h": 12 },
+        "settingsSchema": [
+          { "key": "title", "label": "Title", "type": "text", "defaultValue": "Quick Links" },
+          {
+            "key": "style",
+            "label": "Look",
+            "type": "select",
+            "defaultValue": "list",
+            "options": [
+              { "value": "list", "label": "Vertical list" },
+              { "value": "grid", "label": "Compact grid" },
+              { "value": "pills", "label": "Wrapped pills" }
+            ]
+          },
+          {
+            "key": "items",
+            "label": "Links",
+            "type": "group",
+            "required": true,
+            "fields": [
+              { "key": "name", "label": "Name", "type": "text", "required": true },
+              { "key": "url", "label": "URL", "type": "url", "required": true },
+              { "key": "newTab", "label": "New tab", "type": "toggle", "defaultValue": true }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

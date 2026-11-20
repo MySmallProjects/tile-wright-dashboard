@@ -17,10 +17,29 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tilewright.AddonContracts\Tilewright.AddonContracts.csproj" />
+    <ProjectReference Include="..\Tilewright.Addons.BuiltIn\Tilewright.Addons.BuiltIn.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="..\addons\**" LinkBase="addons" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="CopyBuiltInAddonAssemblies" AfterTargets="Build">
+    <PropertyGroup>
+      <_BuiltInDll>$(OutputPath)Tilewright.Addons.BuiltIn.dll</_BuiltInDll>
+    </PropertyGroup>
+    <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\image" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\api-value" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\homeassistant" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyBuiltInAddonAssembliesOnPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_PublishedDll>$(PublishDir)Tilewright.Addons.BuiltIn.dll</_PublishedDll>
+    </PropertyGroup>
+    <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\image" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\api-value" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\homeassistant" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

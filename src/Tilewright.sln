@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tilewright.Server.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tilewright.AddonContracts", "Tilewright.AddonContracts\Tilewright.AddonContracts.csproj", "{B4E4A6F1-2B55-4E2F-9F1A-333333333333}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tilewright.Addons.BuiltIn", "Tilewright.Addons.BuiltIn\Tilewright.Addons.BuiltIn.csproj", "{B4E4A6F1-2B55-4E2F-9F1A-444444444444}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

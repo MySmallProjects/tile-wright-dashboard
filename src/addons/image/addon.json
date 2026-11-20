@@ -1,0 +1,57 @@
+{
+  "id": "image",
+  "name": "Image & Camera",
+  "version": "1.0.0",
+  "description": "Displays an image from a URL (fetched via server) or a random image from a server folder.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.ImageAddonModule"
+    },
+    "addonSettingsSchema": [
+      { "key": "authHeaderName", "label": "Optional Auth Header Name", "type": "text", "helpText": "e.g. Authorization or X-API-Key (stays server-side)" },
+      { "key": "authHeaderValue", "label": "Optional Auth Header Value", "type": "secret", "helpText": "Write-only secret sent by the server when fetching URLs." },
+      { "key": "allowedFolderRoot", "label": "Local Image Folder Root", "type": "text", "helpText": "Optional override folder for random local images (defaults to data/addons/image/images)." }
+    ],
+    "tiles": [
+      {
+        "id": "image",
+        "name": "Image / Camera",
+        "description": "Server-fetched URL image or random folder photo with refresh interval.",
+        "icon": "image",
+        "element": { "tagName": "tw-addon-image", "script": "image-tile.js" },
+        "defaultSize": { "w": 6, "h": 4 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 16, "h": 12 },
+        "settingsSchema": [
+          {
+            "key": "sourceMode",
+            "label": "Source",
+            "type": "select",
+            "defaultValue": "url",
+            "options": [
+              { "value": "url", "label": "Remote URL (via server)" },
+              { "value": "folder", "label": "Random image from server folder" }
+            ]
+          },
+          { "key": "imageUrl", "label": "Image URL", "type": "url", "helpText": "Used when Source is Remote URL." },
+          { "key": "folderPath", "label": "Subfolder (optional)", "type": "text", "helpText": "Relative subfolder under the image folder root." },
+          { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "15m", "helpText": "e.g. 5s for camera, 2h for photo frame." },
+          {
+            "key": "fit",
+            "label": "Image fit",
+            "type": "select",
+            "defaultValue": "cover",
+            "options": [
+              { "value": "cover", "label": "Cover (fill tile)" },
+              { "value": "contain", "label": "Contain (show full image)" }
+            ]
+          },
+          { "key": "caption", "label": "Caption (optional)", "type": "text" }
+        ]
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@
   import 'gridstack/dist/gridstack.min.css';
   import { api } from '../lib/api';
   import { ensureAddonScriptLoaded } from '../lib/addonLoader';
+  import { resolveMdiPath } from '../lib/icons';
   import type {
     AddonOverview,
     AddonTile,
@@ -15,62 +16,11 @@
   import TilePickerModal from './TilePickerModal.svelte';
   import TileSettingsModal from './TileSettingsModal.svelte';
 
-  // Built-in starter definitions (kept until Phase 6 replaces them with full standalone addons)
-  const STARTER_TILES: AddonTile[] = [
-    {
-      addonId: 'starter',
-      addonName: 'Built-in Starter',
-      addonVersion: '0.1.0',
-      tileTypeId: 'clock',
-      spec: {
-        id: 'clock',
-        name: 'Clock',
-        description: 'Live time and date with .NET format tokens.',
-        icon: 'clock-outline',
-        element: { tagName: 'tw-clock-tile', script: '' },
-        defaultSize: { w: 6, h: 2 },
-        minSize: { w: 2, h: 1 },
-        maxSize: { w: 16, h: 6 },
-        settingsSchema: [
-          {
-            key: 'hourFormat',
-            label: 'Hour format',
-            type: 'select',
-            defaultValue: '24',
-            options: [
-              { value: '24', label: '24-hour' },
-              { value: '12', label: '12-hour (AM/PM)' }
-            ]
-          },
-          {
-            key: 'dateFormat',
-            label: 'Date format (.NET tokens)',
-            type: 'text',
-            defaultValue: 'dddd dd MMM yyyy',
-            helpText: 'Example: dddd dd MMM yyyy → Thursday 19 Nov 2026'
-          },
-          { key: 'showSeconds', label: 'Show seconds', type: 'toggle', defaultValue: false }
-        ]
-      }
-    },
-    {
-      addonId: 'starter',
-      addonName: 'Built-in Starter',
-      addonVersion: '0.1.0',
-      tileTypeId: 'note',
-      spec: {
-        id: 'note',
-        name: 'Note',
-        description: 'Quick post-it text stored separately from layout.',
-        icon: 'note-text-outline',
-        element: { tagName: 'tw-note-tile', script: '' },
-        defaultSize: { w: 4, h: 3 },
-        minSize: { w: 2, h: 2 },
-        maxSize: { w: 16, h: 12 },
-        settingsSchema: []
-      }
-    }
-  ];
+  // Backward-compatibility alias for starter tiles placed in Phases 3-5
+  const LEGACY_TYPE_ALIAS: Record<string, string> = {
+    clock: 'clock:clock',
+    note: 'notes:notes'
+  };
 
   let {
     dashboard,
@@ -80,6 +30,9 @@
     onEnterEdit,
     onExitEdit,
     onDashboardChanged,
+    onSubscribeSource,
+    onUnsubscribeSource,
+    liveUpdate,
     onNotify
   }: {
     dashboard: DashboardDetail;
@@ -89,6 +42,9 @@
     onEnterEdit: () => void;
     onExitEdit: () => void;
     onDashboardChanged: (updated: DashboardDetail) => void;
+    onSubscribeSource?: (source: string) => void;
+    onUnsubscribeSource?: (source: string) => void;
+    liveUpdate?: { source: string; payload: unknown; seq: number } | null;
     onNotify: (msg: string) => void;
   } = $props();
 
@@ -109,21 +65,30 @@
 
   const clone = <T>(val: T): T => structuredClone($state.snapshot(val)) as T;
 
-  let allPickerTiles = $derived.by(() => {
-    const addonTiles = addonOverview.availableTiles ?? [];
-    const existingIds = new Set(addonTiles.map((t) => t.tileTypeId));
-    return [...addonTiles, ...STARTER_TILES.filter((s) => !existingIds.has(s.tileTypeId))];
+  let allPickerTiles = $derived(addonOverview.availableTiles ?? []);
+  const mountedElements = new Map<string, HTMLElement & { data?: unknown }>();
+
+  // Push live SignalR DataUpdate payloads to mounted tiles without remounting the grid
+  $effect(() => {
+    const upd = liveUpdate;
+    if (!upd) return;
+    untrack(() => {
+      for (const el of mountedElements.values()) {
+        el.data = upd.payload;
+      }
+    });
   });
 
   function resolveTileDef(typeId: string): {
     def?: AddonTile;
     placeholder?: { title: string; detail: string };
   } {
-    const found = allPickerTiles.find((t) => t.tileTypeId === typeId);
+    const normalizedId = LEGACY_TYPE_ALIAS[typeId] ?? typeId;
+    const found = allPickerTiles.find((t) => t.tileTypeId === normalizedId);
     if (found) return { def: found };
 
     // Check if it belongs to a known disabled or failed addon (addonId:tileId)
-    const [addonId] = typeId.split(':');
+    const [addonId] = normalizedId.split(':');
     const addon = addonOverview.addons.find((a) => a.id === addonId);
     if (addon) {
       if (addon.state === 'disabled') {
@@ -243,7 +208,8 @@
         width: tile.w,
         height: tile.h,
         addonId: def.addonId,
-        tileId: tile.id
+        tileId: tile.id,
+        resolveIconPath: resolveMdiPath
       };
 
       wc.addEventListener('tile-data-changed', async (ev: Event) => {
@@ -270,15 +236,32 @@
       });
 
       wc.addEventListener('request-action', async (ev: Event) => {
-        const detail = (ev as CustomEvent<{ action?: string; payload?: unknown }>).detail;
-        if (!detail?.action || def.addonId === 'starter') return;
+        const detail = (ev as CustomEvent<{
+          action?: string;
+          payload?: unknown;
+          onResult?: (res: unknown) => void;
+        }>).detail;
+        if (!detail?.action) return;
         try {
-          await api.invokeAddonAction(def.addonId, detail.action, detail.payload);
+          const res = await api.invokeAddonAction(def.addonId, detail.action, detail.payload);
+          detail.onResult?.(res.result);
         } catch {
+          detail.onResult?.({ error: 'Action request failed.' });
           onNotify('Tile action failed.');
         }
       });
 
+      wc.addEventListener('subscribe-source', (ev: Event) => {
+        const src = (ev as CustomEvent<{ source?: string }>).detail?.source;
+        if (src) onSubscribeSource?.(src);
+      });
+
+      wc.addEventListener('unsubscribe-source', (ev: Event) => {
+        const src = (ev as CustomEvent<{ source?: string }>).detail?.source;
+        if (src) onUnsubscribeSource?.(src);
+      });
+
+      mountedElements.set(tile.id, wc);
       body.appendChild(wc);
     };
 
@@ -381,6 +364,7 @@
 
   function mountGrid() {
     if (!gridEl || !gridOuterEl) return;
+    mountedElements.clear();
     if (grid) {
       grid.destroy(false);
       grid = null;

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tilewright.Server\Tilewright.Server.csproj" />
+    <ProjectReference Include="..\Tilewright.Addons.BuiltIn\Tilewright.Addons.BuiltIn.csproj" />
   </ItemGroup>
 
 </Project>

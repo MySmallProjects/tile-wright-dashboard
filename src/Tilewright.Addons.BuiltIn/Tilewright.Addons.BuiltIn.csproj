@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Tilewright.Addons.BuiltIn</RootNamespace>
+  </PropertyGroup>
+
+  <Import Project="..\version.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tilewright.AddonContracts\Tilewright.AddonContracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,119 @@
+{
+  "id": "homeassistant",
+  "name": "Home Assistant",
+  "version": "1.0.0",
+  "description": "Live Home Assistant sensors (WebSocket) and device controls (REST) with semantic colour rules.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.HomeAssistantAddonModule"
+    },
+    "addonSettingsSchema": [
+      { "key": "baseUrl", "label": "Home Assistant Base URL", "type": "url", "required": true, "helpText": "e.g. http://homeassistant.local:8123" },
+      { "key": "accessToken", "label": "Long-Lived Access Token", "type": "secret", "required": true, "helpText": "Created in your Home Assistant profile. Stored write-only on the server." }
+    ],
+    "tiles": [
+      {
+        "id": "sensor",
+        "name": "HA Sensor (Read)",
+        "description": "Displays live Home Assistant entity state (temp, power, humidity, air quality) with colour rules.",
+        "icon": "lightning-bolt",
+        "element": { "tagName": "tw-addon-ha-sensor", "script": "ha-sensor-tile.js" },
+        "defaultSize": { "w": 4, "h": 2 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 12, "h": 6 },
+        "settingsSchema": [
+          {
+            "key": "entityId",
+            "label": "Entity (from Home Assistant)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "entities",
+            "helpText": "Populated automatically once Home Assistant URL and token are configured in Settings → Addons."
+          },
+          {
+            "key": "manualEntityId",
+            "label": "Or enter Entity ID manually",
+            "type": "text",
+            "helpText": "e.g. sensor.living_room_temperature"
+          },
+          { "key": "label", "label": "Label override (optional)", "type": "text" },
+          { "key": "unitOverride", "label": "Unit override (optional)", "type": "text" },
+          {
+            "key": "colourRules",
+            "label": "Colour Rules",
+            "type": "group",
+            "helpText": "Evaluated in order (e.g. > 150 warning, > 300 critical).",
+            "fields": [
+              {
+                "key": "operator",
+                "label": "Op",
+                "type": "select",
+                "defaultValue": ">",
+                "options": [
+                  { "value": ">", "label": ">" },
+                  { "value": ">=", "label": ">=" },
+                  { "value": "<", "label": "<" },
+                  { "value": "<=", "label": "<=" },
+                  { "value": "==", "label": "==" },
+                  { "value": "!=", "label": "!=" }
+                ]
+              },
+              { "key": "threshold", "label": "Value", "type": "text" },
+              {
+                "key": "semanticState",
+                "label": "State",
+                "type": "select",
+                "defaultValue": "warning",
+                "options": [
+                  { "value": "normal", "label": "Normal" },
+                  { "value": "warning", "label": "Warning" },
+                  { "value": "critical", "label": "Critical" }
+                ]
+              },
+              { "key": "customColour", "label": "Custom colour", "type": "text", "helpText": "Optional CSS hex" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "control",
+        "name": "HA Control (Toggle)",
+        "description": "Toggle or trigger a Home Assistant switch, light, script, or scene with live state.",
+        "icon": "home",
+        "element": { "tagName": "tw-addon-ha-control", "script": "ha-control-tile.js" },
+        "defaultSize": { "w": 4, "h": 2 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 12, "h": 6 },
+        "settingsSchema": [
+          {
+            "key": "entityId",
+            "label": "Entity (from Home Assistant)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "entities"
+          },
+          {
+            "key": "manualEntityId",
+            "label": "Or enter Entity ID manually",
+            "type": "text",
+            "helpText": "e.g. light.kitchen or switch.desk_lamp"
+          },
+          { "key": "label", "label": "Label override (optional)", "type": "text" },
+          {
+            "key": "service",
+            "label": "Action service",
+            "type": "select",
+            "defaultValue": "toggle",
+            "options": [
+              { "value": "toggle", "label": "Toggle" },
+              { "value": "turn_on", "label": "Turn On" },
+              { "value": "turn_off", "label": "Turn Off" },
+              { "value": "press", "label": "Press (Button)" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -69,6 +69,8 @@
   let serverVersionInfo = $state<VersionInfo | null>(null);
   let serverVersion = $state<string | null>(null);
   let hubConnected = $state(false);
+  let liveUpdate = $state<{ source: string; payload: unknown; seq: number } | null>(null);
+  let liveSeq = 0;
   let toastMsg = $state('');
   let toastTimer: number | null = null;
   let swipeStart: { x: number; y: number; time: number } | null = null;
@@ -194,6 +196,10 @@
       },
       onStateChange: (connected) => {
         hubConnected = connected;
+      },
+      onDataUpdate: (source, payload) => {
+        liveSeq += 1;
+        liveUpdate = { source, payload, seq: liveSeq };
       }
     });
   }
@@ -374,9 +380,12 @@
             {userSettings}
             {addonOverview}
             {editMode}
+            {liveUpdate}
             onEnterEdit={() => (editMode = true)}
             onExitEdit={() => (editMode = false)}
             onDashboardChanged={(updated) => (activeDashboard = updated)}
+            onSubscribeSource={(src) => void hub.subscribe(src)}
+            onUnsubscribeSource={(src) => void hub.unsubscribe(src)}
             onNotify={notify}
           />
         {/key}

@@ -1,0 +1,78 @@
+{
+  "id": "clock",
+  "name": "Clock",
+  "version": "1.0.0",
+  "description": "Live time and date tile with .NET/Unicode format tokens.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "tiles": [
+      {
+        "id": "clock",
+        "name": "Clock",
+        "description": "Displays current time and formatted date (client-side).",
+        "icon": "clock-outline",
+        "element": { "tagName": "tw-addon-clock", "script": "clock-tile.js" },
+        "defaultSize": { "w": 6, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 16, "h": 6 },
+        "settingsSchema": [
+          {
+            "key": "hourFormat",
+            "label": "Hour format",
+            "type": "select",
+            "defaultValue": "24",
+            "options": [
+              { "value": "24", "label": "24-hour" },
+              { "value": "12", "label": "12-hour (AM/PM)" }
+            ]
+          },
+          {
+            "key": "dateFormat",
+            "label": "Date format (.NET tokens)",
+            "type": "text",
+            "defaultValue": "dddd dd MMM yyyy",
+            "helpText": "MM = month, mm = minutes. Default: dddd dd MMM yyyy (Thursday 12 Nov 2026)"
+          },
+          {
+            "key": "showSeconds",
+            "label": "Show seconds",
+            "type": "toggle",
+            "defaultValue": false
+          },
+          {
+            "key": "layout",
+            "label": "Date position",
+            "type": "select",
+            "defaultValue": "date-below",
+            "options": [
+              { "value": "date-below", "label": "Date below time" },
+              { "value": "date-above", "label": "Date above time" },
+              { "value": "hidden", "label": "Hide date" }
+            ]
+          },
+          {
+            "key": "alignment",
+            "label": "Alignment",
+            "type": "select",
+            "defaultValue": "center",
+            "options": [
+              { "value": "left", "label": "Left" },
+              { "value": "center", "label": "Centre" },
+              { "value": "right", "label": "Right" }
+            ]
+          },
+          {
+            "key": "fontScale",
+            "label": "Font scale",
+            "type": "number",
+            "defaultValue": 1,
+            "min": 0.5,
+            "max": 3,
+            "helpText": "Multiplier for text size (e.g. 1, 1.5, 2)"
+          }
+        ]
+      }
+    ]
+  }
+}

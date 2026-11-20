@@ -1,0 +1,40 @@
+{
+  "id": "api-value",
+  "name": "API / Stock Value",
+  "version": "1.0.0",
+  "description": "Fetches a JSON value (stock price, metric, or API field) server-side with caching and formatting.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.ApiValueAddonModule"
+    },
+    "addonSettingsSchema": [
+      { "key": "authHeaderName", "label": "Optional Auth Header Name", "type": "text", "helpText": "e.g. Authorization or X-API-Key" },
+      { "key": "authHeaderValue", "label": "Optional Auth Header Value", "type": "secret", "helpText": "Write-only secret attached by the server." }
+    ],
+    "tiles": [
+      {
+        "id": "api-value",
+        "name": "API / Stock Value",
+        "description": "Server-side JSON API / stock ticker value with path extraction.",
+        "icon": "chart-line",
+        "element": { "tagName": "tw-addon-api-value", "script": "api-value-tile.js" },
+        "defaultSize": { "w": 4, "h": 2 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 12, "h": 6 },
+        "settingsSchema": [
+          { "key": "label", "label": "Label", "type": "text", "required": true, "defaultValue": "BP.L" },
+          { "key": "apiUrl", "label": "JSON API URL", "type": "url", "required": true, "helpText": "Fetched by the server (CORS-free)." },
+          { "key": "jsonPath", "label": "JSON path", "type": "text", "helpText": "Dot/bracket path, e.g. chart.result[0].meta.regularMarketPrice" },
+          { "key": "prefix", "label": "Prefix", "type": "text", "helpText": "e.g. £ or $" },
+          { "key": "suffix", "label": "Suffix", "type": "text", "helpText": "e.g. p, %, USD" },
+          { "key": "decimals", "label": "Decimal places", "type": "number", "min": 0, "max": 6, "defaultValue": 2 },
+          { "key": "logoUrl", "label": "Logo URL (optional)", "type": "url" },
+          { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" }
+        ]
+      }
+    ]
+  }
+}

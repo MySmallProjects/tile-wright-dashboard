@@ -234,7 +234,37 @@ dotnet run --project src/Tilewright.Server --no-build
   - *Expected:* Addon starts in `disabled` state with a **"Forced off (config)"** badge.
 
 ## Phase 6: Initial Addons
-*(Checklist will be detailed at the end of Phase 6.)*
+
+Run all automated tests (now includes colour-rule evaluation, JSON path extraction, and duration parsing):
+```bash
+dotnet test src/Tilewright.sln
+```
+Then start the server (both backend and `wwwroot` built together):
+```bash
+dotnet run --project src/Tilewright.Server --no-build
+```
+
+### 6.1 Built-in Addons Loaded
+- [ ] **All 9 built-in addons enabled:** Open **Settings → Addons**.
+  - *Expected:* `Default Themes`, `Material Design Icons (MDI)`, `Clock`, `Notes`, `Countdown`, `Links`, `Image & Camera`, `API / Stock Value`, and `Home Assistant` all appear as `Built-in` and `enabled` (zero `failed`).
+
+### 6.2 Client-Side Addons (Clock, Notes, Countdown, Links)
+- [ ] **Clock:** Add a **Clock** tile, test 12/24h, `dddd dd MMM yyyy` (verify `MM` = month, `mm` = minutes), show seconds, date above/below/hidden, alignment, and font scale.
+  - *Expected:* Renders cleanly in both Light and Dark themes with live time updates.
+- [ ] **Notes:** Add a **Notes** tile with **Allow editing in view mode** off (default) → verify it is read-only. Turn **Allow editing in view mode** on, type text in view mode, enter Edit mode, move the tile, and press **Cancel**.
+  - *Expected:* Layout reverts, while note text typed in view mode is preserved (stored in tile data).
+- [ ] **Countdown:** Add a **Countdown** tile for a weekly repeating day (e.g. today's weekday → shows **"Today"**) and a yearly/one-off date (e.g. `2026-12-25`).
+  - *Expected:* Shows `"Today"` on the matching day and accurate day counts otherwise.
+- [ ] **Links:** Add a **Links** tile with 2–3 rows in the repeating group and test `list`, `grid`, and `pills` styles.
+  - *Expected:* Links open properly in view mode and are non-interactive in edit mode.
+
+### 6.3 Server-Side Addons (Image, API / Stock, Home Assistant)
+- [ ] **Image / Camera:** Add an **Image / Camera** tile pointing at an HTTP image URL (or drop an image in `src/Tilewright.Server/data/addons/image/images/` and select **Random image from server folder**).
+  - *Expected:* Image loads through the server (inspect Network tab — no direct browser request to the remote URL); caption and cover/contain fit work.
+- [ ] **API / Stock Value:** Add an **API / Stock Value** tile with a JSON endpoint (e.g. `http://localhost:5050/api/version`, JSON path `buildNumber`, prefix `#`, decimals `0`).
+  - *Expected:* Server fetches JSON, extracts the path, and displays the formatted value.
+- [ ] **Home Assistant (Read & Control):** *(If you have an HA instance on your LAN)* Configure Home Assistant URL and write-only access token in **Settings → Addons → Home Assistant → Settings**. Add an **HA Sensor (Read)** tile (verify entity dropdown populates dynamically, configure colour rules e.g. `> 150 warning`, `> 300 critical`) and an **HA Control (Toggle)** tile.
+  - *Expected:* Sensor displays live state and updates via HA WebSocket; Control toggles the entity through the server and reflects external changes live. Without HA configured, both tiles show a clean **"Needs setup"** placeholder.
 
 ## Phase 7: Polish and Scripts
 *(Checklist will be detailed at the end of Phase 7.)*
