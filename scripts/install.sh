@@ -6,14 +6,16 @@ set -euo pipefail
 # Safe to re-run for upgrades: never wipes dashboards, sessions, secrets, or addons.
 
 AUTO_YES=false
+GIT_INSECURE_SSL="${TILEWRIGHT_GIT_INSECURE:-false}"
 REPO_URL="${TILEWRIGHT_REPO_URL:-}"
 
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) AUTO_YES=true ;;
+    --insecure-ssl) GIT_INSECURE_SSL=true ;;
     *)
       echo "Unknown option: $arg"
-      echo "Usage: $0 [--yes]"
+      echo "Usage: $0 [--yes] [--insecure-ssl]"
       exit 1
       ;;
   esac
@@ -30,7 +32,7 @@ echo "=== Tilewright Production Installer ==="
 echo ""
 echo "Planned steps:"
 echo "  1. Check Ubuntu/Debian OS and sudo/root permissions"
-echo "  2. Install .NET 10 SDK and Node.js/npm if missing (for building from source)"
+echo "  2. Install .NET 10 SDK, Node.js/npm, and git if missing (for building from source)"
 echo "  3. Prepare or update source code (without assuming git for versioning)"
 echo "  4. Build Svelte frontend and publish Tilewright.Server to $APP_DIR"
 echo "  5. Create '$SERVICE_USER' user and data/config folders ($DATA_DIR, $ETC_DIR)"
@@ -100,16 +102,29 @@ else
   $SUDO apt-get install -y nodejs npm
 fi
 
+if command -v git >/dev/null 2>&1; then
+  echo "[OK] git ($(git --version)) already installed."
+else
+  echo "[Installing] git..."
+  $SUDO apt-get update
+  $SUDO apt-get install -y git
+fi
+
 # 3. Locate or pull source code
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+GIT_SSL_ARGS=()
+if [[ "$GIT_INSECURE_SSL" == "true" ]]; then
+  GIT_SSL_ARGS=(-c http.sslVerify=false)
+fi
+
 if [[ -f "$LOCAL_REPO/src/Tilewright.sln" ]]; then
   WORK_SRC="$LOCAL_REPO"
-  if [[ -d "$WORK_SRC/.git" ]] && command -v git >/dev/null 2>&1; then
+  if [[ -d "$WORK_SRC/.git" ]]; then
     echo "[Updating] Resetting local build-number.txt bump and pulling latest changes..."
     git -C "$WORK_SRC" checkout -- src/build-number.txt 2>/dev/null || true
-    git -C "$WORK_SRC" pull --ff-only || echo "[Warn] git pull skipped or failed; building local checkout."
+    git "${GIT_SSL_ARGS[@]}" -C "$WORK_SRC" pull --ff-only || echo "[Warn] git pull skipped or failed; building local checkout."
   else
     echo "[OK] Using local source folder (no .git required): $WORK_SRC"
   fi
@@ -121,13 +136,23 @@ else
     echo "Error: No source directory or repository URL provided."
     exit 1
   fi
+  if [[ "$GIT_INSECURE_SSL" != "true" && "$AUTO_YES" != "true" && "$REPO_URL" == https://* ]]; then
+    read -r -p "Skip SSL verification when cloning (for self-signed/local Gitea)? [y/N] " ssl_reply
+    if [[ "$ssl_reply" =~ ^[Yy]$ ]]; then
+      GIT_INSECURE_SSL=true
+      GIT_SSL_ARGS=(-c http.sslVerify=false)
+    fi
+  fi
   if [[ -d "$SRC_CACHE/.git" ]]; then
     echo "[Updating] Pulling latest code in $SRC_CACHE..."
     $SUDO git -C "$SRC_CACHE" checkout -- src/build-number.txt 2>/dev/null || true
-    $SUDO git -C "$SRC_CACHE" pull --ff-only
+    $SUDO git "${GIT_SSL_ARGS[@]}" -C "$SRC_CACHE" pull --ff-only
   else
     echo "[Cloning] $REPO_URL -> $SRC_CACHE..."
-    $SUDO git clone "$REPO_URL" "$SRC_CACHE"
+    $SUDO git "${GIT_SSL_ARGS[@]}" clone "$REPO_URL" "$SRC_CACHE"
+    if [[ "$GIT_INSECURE_SSL" == "true" ]]; then
+      $SUDO git -C "$SRC_CACHE" config http.sslVerify false
+    fi
   fi
   WORK_SRC="$SRC_CACHE"
 fi
@@ -191,7 +216,7 @@ Group=$SERVICE_USER
 WorkingDirectory=$APP_DIR
 EnvironmentFile=-$ETC_DIR/tilewright.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://127.0.0.1:5050
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5050
 Environment=Tilewright__DataRoot=$DATA_DIR
 ExecStart=$APP_DIR/Tilewright.Server
 Restart=always
@@ -225,7 +250,7 @@ cat <<'NOTES'
 === Important Post-Install Notes ===
 
 1. First-run setup:
-   Open the site in your browser (via nginx or SSH tunnel to http://127.0.0.1:5050)
+   Open http://<server-ip>:5050 (or via nginx) in your browser
    to create the first administrator account.
 
 2. Folder locations:

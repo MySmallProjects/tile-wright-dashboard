@@ -32,7 +32,7 @@ Group=tilewright
 WorkingDirectory=/opt/tilewright
 EnvironmentFile=-/etc/tilewright/tilewright.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://127.0.0.1:5050
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5050
 Environment=Tilewright__DataRoot=/var/lib/tilewright
 ExecStart=/opt/tilewright/Tilewright.Server
 Restart=always
@@ -53,7 +53,7 @@ sudo journalctl -u tilewright -f
 
 ## 3. Reverse Proxy (nginx)
 
-Kestrel binds to `127.0.0.1:5050`. Place nginx in front of it for HTTPS (or custom hostnames).
+Kestrel listens on `0.0.0.0:5050` (reachable directly on your LAN over HTTP). You can also place nginx in front of it for HTTPS or custom hostnames.
 
 > **Important:**
 > - Include `X-Forwarded-Proto`, `X-Forwarded-For`, and `Host` so Tilewright automatically detects HTTPS and sets `__Host-tw_session` with `Secure` and HSTS (and omits them on plain HTTP).
