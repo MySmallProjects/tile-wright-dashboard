@@ -39,7 +39,35 @@
             "helpText": "e.g. sensor.living_room_temperature"
           },
           { "key": "label", "label": "Label override (optional)", "type": "text" },
+          {
+            "key": "labelPosition",
+            "label": "Label position",
+            "type": "select",
+            "defaultValue": "top",
+            "options": [
+              { "value": "top", "label": "Top" },
+              { "value": "bottom", "label": "Bottom" }
+            ]
+          },
           { "key": "unitOverride", "label": "Unit override (optional)", "type": "text" },
+          {
+            "key": "iconPosition",
+            "label": "Icon position",
+            "type": "select",
+            "defaultValue": "none",
+            "options": [
+              { "value": "none", "label": "Hidden (default)" },
+              { "value": "left", "label": "Left of value" },
+              { "value": "right", "label": "Right of value" },
+              { "value": "above", "label": "Above value" },
+              { "value": "below", "label": "Below value" }
+            ]
+          },
+          {
+            "key": "icon",
+            "label": "Icon (optional, defaults to HA entity icon)",
+            "type": "icon"
+          },
           {
             "key": "colourRules",
             "label": "Colour Rules",
@@ -101,6 +129,16 @@
           },
           { "key": "label", "label": "Label override (optional)", "type": "text" },
           {
+            "key": "labelPosition",
+            "label": "Label position",
+            "type": "select",
+            "defaultValue": "top",
+            "options": [
+              { "value": "top", "label": "Top" },
+              { "value": "bottom", "label": "Bottom" }
+            ]
+          },
+          {
             "key": "service",
             "label": "Action service",
             "type": "select",
@@ -111,6 +149,46 @@
               { "value": "turn_off", "label": "Turn Off" },
               { "value": "press", "label": "Press (Button)" }
             ]
+          },
+          {
+            "key": "buttonLabel",
+            "label": "Button label (optional)",
+            "type": "text",
+            "helpText": "Text shown on the button (e.g. for Press buttons instead of last-pressed timestamp)."
+          },
+          {
+            "key": "displayMode",
+            "label": "Button display",
+            "type": "select",
+            "defaultValue": "text",
+            "options": [
+              { "value": "text", "label": "Text / State pill (default)" },
+              { "value": "icon", "label": "Icon" }
+            ]
+          },
+          {
+            "key": "iconOn",
+            "label": "On icon (when Button display = Icon)",
+            "type": "icon",
+            "defaultValue": "lightning-bolt"
+          },
+          {
+            "key": "iconOff",
+            "label": "Off icon (when Button display = Icon)",
+            "type": "icon",
+            "defaultValue": "power"
+          },
+          {
+            "key": "pressIcon",
+            "label": "Press button icon (when Action = Press)",
+            "type": "icon",
+            "defaultValue": "home"
+          },
+          {
+            "key": "showLastUpdated",
+            "label": "Show last updated time",
+            "type": "toggle",
+            "defaultValue": false
           }
         ]
       }
