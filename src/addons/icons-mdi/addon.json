@@ -1,0 +1,16 @@
+{
+  "id": "icons-mdi",
+  "name": "Material Design Icons (MDI)",
+  "version": "1.0.0",
+  "description": "Bundled local Material Design Icons (SVG, currentColor) compatible with Home Assistant mdi: names.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "iconPacks": [
+      {
+        "id": "mdi",
+        "name": "Material Design Icons"
+      }
+    ]
+  }
+}

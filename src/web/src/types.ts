@@ -86,3 +86,97 @@ export interface VersionInfo {
   gitCommit?: string;
   gitDirty?: boolean;
 }
+
+export interface SelectOptionSpec {
+  value: string;
+  label: string;
+}
+
+export interface SettingsFieldSchema {
+  key: string;
+  label: string;
+  type:
+    | 'text'
+    | 'multiline'
+    | 'number'
+    | 'toggle'
+    | 'select'
+    | 'colour'
+    | 'icon'
+    | 'url'
+    | 'duration'
+    | 'secret'
+    | 'group';
+  helpText?: string | null;
+  defaultValue?: unknown;
+  required?: boolean;
+  min?: number | null;
+  max?: number | null;
+  pattern?: string | null;
+  options?: SelectOptionSpec[] | null;
+  dynamicOptionsEndpoint?: string | null;
+  fields?: SettingsFieldSchema[] | null;
+}
+
+export interface TileElementSpec {
+  tagName: string;
+  script: string;
+}
+
+export interface TileSizeSpec {
+  w: number;
+  h: number;
+}
+
+export interface TileTypeContribution {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  element: TileElementSpec;
+  settingsElement?: TileElementSpec | null;
+  defaultSize: TileSizeSpec;
+  minSize: TileSizeSpec;
+  maxSize: TileSizeSpec;
+  settingsSchema: SettingsFieldSchema[];
+}
+
+export interface ThemeContribution {
+  id: string;
+  name: string;
+  cssFile: string;
+  preferredIconPack?: string | null;
+}
+
+export interface AddonContributions {
+  tiles: TileTypeContribution[];
+  themes: ThemeContribution[];
+  addonSettingsSchema: SettingsFieldSchema[];
+}
+
+export interface AddonInfo {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  builtIn: boolean;
+  state: 'enabled' | 'disabled' | 'failed' | 'pending-install' | 'pending-removal';
+  error?: string | null;
+  forcedDisabled: boolean;
+  contributes: AddonContributions;
+}
+
+export interface AddonTile {
+  addonId: string;
+  addonName: string;
+  addonVersion: string;
+  tileTypeId: string;
+  spec: TileTypeContribution;
+}
+
+export interface AddonOverview {
+  restartRequired: boolean;
+  addons: AddonInfo[];
+  availableTiles: AddonTile[];
+}

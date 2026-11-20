@@ -1,0 +1,24 @@
+{
+  "id": "themes-default",
+  "name": "Default Themes",
+  "version": "1.0.0",
+  "description": "Built-in Light and Dark themes for Tilewright.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "themes": [
+      {
+        "id": "light",
+        "name": "Light",
+        "cssFile": "light.css",
+        "preferredIconPack": "mdi"
+      },
+      {
+        "id": "dark",
+        "name": "Dark",
+        "cssFile": "dark.css",
+        "preferredIconPack": "mdi"
+      }
+    ]
+  }
+}

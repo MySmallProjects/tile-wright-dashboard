@@ -335,7 +335,7 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 45;
+    z-index: 1000;
     background: var(--tw-modal-backdrop);
     display: flex;
     align-items: center;

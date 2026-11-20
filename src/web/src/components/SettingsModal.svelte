@@ -2,39 +2,45 @@
   import { onMount } from 'svelte';
   import { api, ApiError } from '../lib/api';
   import type {
+    AddonOverview,
     BackgroundSettings,
     PublicUser,
     SiteSettings,
     UserSettings,
     VersionInfo
   } from '../types';
+  import AddonManagerTab from './AddonManagerTab.svelte';
   import Icon from './Icon.svelte';
 
   let {
     currentUser,
     userSettings,
     siteSettings,
+    addonOverview,
     frontendVersion,
     serverVersionInfo,
     onClose,
     onOpenDashboards,
     onUserSettingsSaved,
     onSiteSettingsSaved,
+    onRefreshAddons,
     onNotify
   }: {
     currentUser: PublicUser;
     userSettings: UserSettings;
     siteSettings: SiteSettings;
+    addonOverview: AddonOverview;
     frontendVersion: string;
     serverVersionInfo: VersionInfo | null;
     onClose: () => void;
     onOpenDashboards?: () => void;
     onUserSettingsSaved: (s: UserSettings) => void;
     onSiteSettingsSaved: (s: SiteSettings) => void;
+    onRefreshAddons: () => Promise<void>;
     onNotify: (msg: string) => void;
   } = $props();
 
-  type TabId = 'appearance' | 'account' | 'site' | 'about';
+  type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'about';
   let activeTab = $state<TabId>('appearance');
 
   // Local editable copies (snapshot Svelte 5 $state proxies before cloning)
@@ -244,6 +250,9 @@
       {#if currentUser.role === 'admin'}
         <button type="button" class:active={activeTab === 'site'} onclick={() => (activeTab = 'site')}>
           Site &amp; Users
+        </button>
+        <button type="button" class:active={activeTab === 'addons'} onclick={() => (activeTab = 'addons')}>
+          Addons {#if addonOverview.restartRequired}●{/if}
         </button>
       {/if}
       <button type="button" class:active={activeTab === 'about'} onclick={() => (activeTab = 'about')}>
@@ -461,6 +470,13 @@
           </form>
         </section>
 
+      {:else if activeTab === 'addons' && currentUser.role === 'admin'}
+        <AddonManagerTab
+          overview={addonOverview}
+          onRefresh={onRefreshAddons}
+          {onNotify}
+        />
+
       {:else if activeTab === 'about'}
         <section class="section">
           <h3>Version Info</h3>
@@ -492,7 +508,7 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 40;
+    z-index: 1000;
     background: var(--tw-modal-backdrop);
     display: flex;
     align-items: center;

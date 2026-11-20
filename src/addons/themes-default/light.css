@@ -1,0 +1,18 @@
+/* Built-in Light theme (contributed by themes-default addon) */
+[data-theme="light"] {
+  --tw-bg: #eef2f6;
+  --tw-surface-rgb: 255, 255, 255;
+  --tw-surface-solid: #ffffff;
+  --tw-surface-elevated: #f8fafc;
+  --tw-text: #0f172a;
+  --tw-text-muted: #475569;
+  --tw-accent: #2563eb;
+  --tw-accent-contrast: #ffffff;
+  --tw-border: rgba(15, 23, 42, 0.12);
+  --tw-state-normal: #16a34a;
+  --tw-state-warning: #d97706;
+  --tw-state-critical: #dc2626;
+  --tw-tile-radius: 16px;
+  --tw-tile-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --tw-chrome-bg: rgba(255, 255, 255, 0.92);
+}

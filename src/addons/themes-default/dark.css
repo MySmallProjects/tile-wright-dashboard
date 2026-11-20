@@ -1,0 +1,18 @@
+/* Built-in Dark theme (contributed by themes-default addon) */
+[data-theme="dark"] {
+  --tw-bg: #0b1120;
+  --tw-surface-rgb: 30, 41, 59;
+  --tw-surface-solid: #1e293b;
+  --tw-surface-elevated: #273449;
+  --tw-text: #f1f5f9;
+  --tw-text-muted: #94a3b8;
+  --tw-accent: #38bdf8;
+  --tw-accent-contrast: #0b1120;
+  --tw-border: rgba(148, 163, 184, 0.2);
+  --tw-state-normal: #22c55e;
+  --tw-state-warning: #f59e0b;
+  --tw-state-critical: #f87171;
+  --tw-tile-radius: 16px;
+  --tw-tile-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --tw-chrome-bg: rgba(15, 23, 42, 0.92);
+}

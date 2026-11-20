@@ -46,8 +46,26 @@ python3 -m http.server 8080
 - **Layout Lab:** `http://localhost:8080/`
 - **API / Tile Harness:** `http://localhost:8080/harness.html`
 
+## Recovery: Disabling Addons Without the UI
+
+If a misbehaving addon makes the Admin UI unreachable, you can force addons off at startup in either of two ways:
+
+1. **File (one addon ID per line):** Create or edit `<DataRoot>/disabled-addons.txt`
+   - Development: `src/Tilewright.Server/data/disabled-addons.txt`
+   - Production: `/var/lib/tilewright/disabled-addons.txt`
+   - Format: **one addon ID per line** (blank lines and `#` comments are ignored), for example:
+     ```text
+     # Force-disabled addons
+     my-broken-addon
+     another-addon
+     ```
+2. **Environment variable (comma-separated):** Set `Tilewright__DisabledAddons=id1,id2` before starting the server.
+
+Restart the server for changes to take effect.
+
 ## Documentation
 
+- [Addons Guide](docs/addons.md) — manifest reference, tile contract, schema types, and worked example
 - [Decisions Log](docs/decisions.md) — recorded architectural and product decisions
 - [Phases](docs/phases.md) — build roadmap and "done when" criteria
 - [Testing Checklists](docs/testing.md) — manual test checklists per phase and device matrix

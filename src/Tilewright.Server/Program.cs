@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Tilewright.Server.Addons;
 using Tilewright.Server.Auth;
 using Tilewright.Server.Endpoints;
 using Tilewright.Server.Hubs;
@@ -24,6 +25,11 @@ builder.Services.AddSingleton<ISiteStore, JsonSiteStore>();
 builder.Services.AddSingleton<IUserStore, JsonUserStore>();
 builder.Services.AddSingleton<ISessionStore, JsonSessionStore>();
 builder.Services.AddSingleton<IDashboardStore, JsonDashboardStore>();
+builder.Services.AddSingleton<ISecretStore, JsonSecretStore>();
+builder.Services.AddSingleton<AddonStateStore>();
+builder.Services.AddSingleton<AddonManager>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AddonManager>());
+builder.Services.AddHttpClient();
 
 // Auth, throttling & versioning
 builder.Services.AddSingleton<PasswordHasher<UserRecord>>();
@@ -107,6 +113,7 @@ app.MapUserEndpoints();
 app.MapSiteEndpoints();
 app.MapDashboardEndpoints();
 app.MapBackgroundEndpoints();
+app.MapAddonEndpoints();
 
 // SignalR live push hub
 app.MapHub<DashboardHub>("/hubs/dashboard");

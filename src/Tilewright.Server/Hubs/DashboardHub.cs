@@ -1,12 +1,16 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Tilewright.Server.Addons;
 using Tilewright.Server.Services;
 
 namespace Tilewright.Server.Hubs;
 
 [Authorize]
-public sealed class DashboardHub(VersionService versions, ILogger<DashboardHub> logger) : Hub
+public sealed class DashboardHub(
+    VersionService versions,
+    AddonManager addons,
+    ILogger<DashboardHub> logger) : Hub
 {
     public override async Task OnConnectedAsync()
     {
@@ -32,20 +36,21 @@ public sealed class DashboardHub(VersionService versions, ILogger<DashboardHub> 
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"source:{source.Trim()}");
     }
 
-    public Task<object> InvokeAction(string addonId, string action, JsonElement? payload)
+    public async Task<object> InvokeAction(string addonId, string action, JsonElement? payload)
     {
-        // Phase 5 will route this to registered IActionHandler addon components.
         logger.LogInformation(
             "Action invoked by user {User} for addon {AddonId}: {Action}",
             Context.UserIdentifier, addonId, action);
 
-        return Task.FromResult<object>(new
+        var result = await addons.InvokeActionAsync(addonId, action, payload, Context.ConnectionAborted);
+        return new
         {
             accepted = true,
             addonId,
             action,
+            result,
             timestamp = DateTimeOffset.UtcNow
-        });
+        };
     }
 
     public Task<object> Ping() =>

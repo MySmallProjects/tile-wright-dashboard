@@ -202,7 +202,36 @@ dotnet run --project src/Tilewright.Server --no-build
   - *Expected:* Reopens directly to the last-viewed dashboard on that device.
 
 ## Phase 5: Addon Framework
-*(Checklist will be detailed at the end of Phase 5.)*
+
+Run automated tests (includes zip-slip, install/upgrade/disable/secrets/recovery, and failed-addon resilience):
+```bash
+dotnet test src/Tilewright.sln
+```
+Then build and run the app:
+```bash
+npm --prefix src/web run build
+dotnet run --project src/Tilewright.Server --no-build
+```
+
+### 5.1 Admin Addon Manager & Built-in Addons
+- [ ] **Built-in addons listed:** Log in as Admin and open **Settings → Addons**.
+  - *Expected:* `Default Themes` (`themes-default`) and `Material Design Icons (MDI)` (`icons-mdi`) appear as `Built-in` and `enabled`.
+- [ ] **Invalid zip rejections:** Try uploading a zip with no `addon.json` and a zip with a `../` path.
+  - *Expected:* Both are rejected with clear error messages (also verified by `AddonFrameworkTests`).
+- [ ] **Upload, pending & restart flow:** Zip the worked example from `docs/addons.md` (`addon.json` + `hello-tile.js`) and upload it via **Upload .zip**.
+  - *Expected:* Addon appears as `pending-install` with a **"Restart required"** banner and **Restart Now** button (in Development, clicking Restart Now tells you to restart manually). After restarting the server, the addon is `enabled`.
+
+### 5.2 Tile Picker & Generated Settings Forms
+- [ ] **Tile picker search & addon chips:** Enter **Edit** mode on a dashboard and click **+ Add Tile**.
+  - *Expected:* Scrollable card grid (full-screen sheet on tablet, modal on desktop) showing icon, name, description, version, addon name, search box, and addon filter chips.
+- [ ] **Settings open on add & schema form:** Pick the **Clock** tile (or your uploaded **Greeting** tile).
+  - *Expected:* Tile is added at its default size and its generated settings form opens immediately. Saving updates the tile live; clicking `⚙` on any tile's edit toolbar re-opens settings.
+
+### 5.3 Disable, Remove & Recovery Override
+- [ ] **Disable addon & placeholder:** In **Settings → Addons**, click **Disable** on your uploaded addon and restart the server.
+  - *Expected:* Its tile is no longer offered in the Tile Picker; existing tiles on your dashboard show an **"Addon disabled"** placeholder while preserving their settings and data. Re-enabling and restarting restores the tile intact.
+- [ ] **Recovery override without UI:** Add an addon ID to `src/Tilewright.Server/data/disabled-addons.txt` (or set `Tilewright__DisabledAddons=<id>`) and restart.
+  - *Expected:* Addon starts in `disabled` state with a **"Forced off (config)"** badge.
 
 ## Phase 6: Initial Addons
 *(Checklist will be detailed at the end of Phase 6.)*

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { api } from './lib/api';
+  import { syncAddonThemeStylesheets } from './lib/addonLoader';
   import { DashboardHubClient } from './lib/signalr';
   import {
     applyThemeAndSurface,
@@ -8,6 +9,7 @@
     resolveEffectiveBackground
   } from './lib/theme';
   import type {
+    AddonOverview,
     DashboardDetail,
     DashboardSummary,
     PublicUser,
@@ -56,6 +58,11 @@
   let dashboards = $state<DashboardSummary[]>([]);
   let enabledDashboards = $derived(dashboards.filter((d) => d.enabled !== false));
   let activeDashboard = $state<DashboardDetail | null>(null);
+  let addonOverview = $state<AddonOverview>({
+    restartRequired: false,
+    addons: [],
+    availableTiles: []
+  });
   let editMode = $state(false);
   let showSettings = $state(false);
   let showDashboardManager = $state(false);
@@ -141,6 +148,16 @@
     }
   }
 
+  async function refreshAddons() {
+    try {
+      const ov = await api.getAddons();
+      addonOverview = ov;
+      syncAddonThemeStylesheets(ov.addons);
+    } catch {
+      // ignore transient error
+    }
+  }
+
   async function loadUserWorkspace(user: PublicUser) {
     currentUser = user;
     if (!user.hasPassword) {
@@ -149,7 +166,8 @@
 
     const [uSettings, list] = await Promise.all([
       api.getUserSettings(),
-      api.listDashboards()
+      api.listDashboards(),
+      refreshAddons()
     ]);
 
     userSettings = uSettings;
@@ -354,6 +372,7 @@
           <DashboardGrid
             dashboard={activeDashboard}
             {userSettings}
+            {addonOverview}
             {editMode}
             onEnterEdit={() => (editMode = true)}
             onExitEdit={() => (editMode = false)}
@@ -388,6 +407,7 @@
         {currentUser}
         {userSettings}
         {siteSettings}
+        {addonOverview}
         {frontendVersion}
         {serverVersionInfo}
         onClose={() => (showSettings = false)}
@@ -397,6 +417,7 @@
         }}
         onUserSettingsSaved={(s) => (userSettings = s)}
         onSiteSettingsSaved={(s) => (siteSettings = s)}
+        onRefreshAddons={refreshAddons}
         onNotify={notify}
       />
     {/if}
@@ -453,7 +474,7 @@
     position: fixed;
     bottom: 68px;
     right: 18px;
-    z-index: 60;
+    z-index: 1100;
     padding: 10px 14px;
     border-radius: 10px;
     background: var(--tw-surface-solid);

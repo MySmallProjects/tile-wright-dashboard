@@ -17,11 +17,11 @@ Work proceeds one phase at a time. Each phase is complete when its **Done when**
 - **Scope:** Chosen frontend stack building to `wwwroot`. Login, user list, first-run setup, dashboard view, edit mode (Done/Cancel), Gridstack layout using the winning Lab variation, Light/Dark themes, icons, backgrounds (with server-side resize/re-encode), site/user settings, and version-mismatch reload banner.
 - **Done when:** All items in [Testing — Phase 3](testing.md#phase-3-frontend-shell) pass.
 
-## Phase 4: Multiple Dashboards UI — *Built (Awaiting Verification)*
-- **Scope:** Horizontal swipe navigation, page dots, switcher menu, create/rename/reorder/duplicate/delete dashboards, unmounting hidden dashboards, and per-device last-viewed dashboard memory.
+## Phase 4: Multiple Dashboards UI — *Complete*
+- **Scope:** Horizontal swipe navigation, page dots, switcher menu, create/rename/reorder/duplicate/delete dashboards, enable/disable dashboards, infinite cycling toggle, unmounting hidden dashboards, and per-device last-viewed dashboard memory.
 - **Done when:** All items in [Testing — Phase 4](testing.md#phase-4-multiple-dashboards-ui) pass.
 
-## Phase 5: Addon Framework — *Pending*
+## Phase 5: Addon Framework — *Built (Awaiting Verification)*
 - **Scope:** `addon.json` manifest, in-process assembly loader, resilience to failed addons, zip upload with zip-slip/size validation, enable/disable + config recovery override, pending/restart flow, tile contract, tile picker, schema-generated settings forms (including repeating groups, dynamic options, write-only secrets), custom settings element support, addon-level settings, and built-in themes + MDI icon pack as addons.
 - **Done when:** All items in [Testing — Phase 5](testing.md#phase-5-addon-framework) pass.
 

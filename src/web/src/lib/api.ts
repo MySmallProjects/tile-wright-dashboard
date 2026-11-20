@@ -1,9 +1,11 @@
 import type {
+  AddonOverview,
   AuthStatus,
   BackgroundSettings,
   DashboardDetail,
   DashboardSummary,
   PublicUser,
+  SelectOptionSpec,
   SiteSettings,
   TileLayoutItem,
   UserSettings,
@@ -169,5 +171,58 @@ export const api = {
       method: 'POST',
       body: form
     });
-  }
+  },
+
+  // Addons
+  getAddons: () => request<AddonOverview>('/api/addons'),
+  uploadAddon: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{
+      addonId: string;
+      name: string;
+      version: string;
+      isUpgrade: boolean;
+      previousVersion?: string;
+      restartRequired: boolean;
+    }>('/api/addons/upload', { method: 'POST', body: form });
+  },
+  enableAddon: (addonId: string) =>
+    request<{ restartRequired: boolean }>(`/api/addons/${encodeURIComponent(addonId)}/enable`, {
+      method: 'POST'
+    }),
+  disableAddon: (addonId: string) =>
+    request<{ restartRequired: boolean }>(`/api/addons/${encodeURIComponent(addonId)}/disable`, {
+      method: 'POST'
+    }),
+  removeAddon: (addonId: string) =>
+    request<{ restartRequired: boolean }>(`/api/addons/${encodeURIComponent(addonId)}`, {
+      method: 'DELETE'
+    }),
+  restartForAddons: () =>
+    request<{ restarted: boolean; development: boolean; message: string }>('/api/addons/restart', {
+      method: 'POST'
+    }),
+  getAddonSettings: (addonId: string) =>
+    request<{ settings: Record<string, unknown>; secretsSet: Record<string, boolean> }>(
+      `/api/addons/${encodeURIComponent(addonId)}/settings`
+    ),
+  saveAddonSettings: (
+    addonId: string,
+    settings: Record<string, unknown>,
+    secrets: Record<string, string | null>
+  ) =>
+    request<void>(`/api/addons/${encodeURIComponent(addonId)}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify({ settings, secrets })
+    }),
+  getDynamicOptions: (addonId: string, endpoint: string) =>
+    request<SelectOptionSpec[]>(
+      `/api/addons/${encodeURIComponent(addonId)}/options/${encodeURIComponent(endpoint)}`
+    ),
+  invokeAddonAction: (addonId: string, action: string, payload?: unknown) =>
+    request<{ accepted: boolean; result?: unknown }>(
+      `/api/addons/${encodeURIComponent(addonId)}/actions/${encodeURIComponent(action)}`,
+      { method: 'POST', body: JSON.stringify(payload ?? null) }
+    )
 };
