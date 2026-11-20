@@ -1,0 +1,57 @@
+{
+  "id": "http-get",
+  "name": "HTTP GET Button",
+  "version": "1.0.0",
+  "description": "Triggers a server-side HTTP GET request to a configured URL with temporary success/failure indicator.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.HttpGetAddonModule"
+    },
+    "addonSettingsSchema": [
+      { "key": "authHeaderName", "label": "Optional Auth Header Name", "type": "text", "helpText": "e.g. Authorization or X-API-Key (stays server-side)" },
+      { "key": "authHeaderValue", "label": "Optional Auth Header Value", "type": "secret", "helpText": "Write-only secret attached by the server." }
+    ],
+    "tiles": [
+      {
+        "id": "http-get",
+        "name": "HTTP GET Button",
+        "description": "Sends a server-side GET request when tapped and flashes a tick or cross.",
+        "icon": "lightning-bolt",
+        "element": { "tagName": "tw-addon-http-get", "script": "http-get-tile.js" },
+        "defaultSize": { "w": 4, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 6 },
+        "settingsSchema": [
+          { "key": "url", "label": "Target URL", "type": "url", "required": true, "helpText": "Called by the server via HTTP GET." },
+          { "key": "label", "label": "Label (optional)", "type": "text" },
+          {
+            "key": "labelPosition",
+            "label": "Label position",
+            "type": "select",
+            "defaultValue": "top",
+            "options": [
+              { "value": "top", "label": "Top" },
+              { "value": "left", "label": "Left" },
+              { "value": "right", "label": "Right" }
+            ]
+          },
+          {
+            "key": "displayMode",
+            "label": "Button display",
+            "type": "select",
+            "defaultValue": "pill",
+            "options": [
+              { "value": "pill", "label": "Text pill (default)" },
+              { "value": "icon", "label": "Icon" }
+            ]
+          },
+          { "key": "buttonText", "label": "Pill text", "type": "text", "defaultValue": "Trigger" },
+          { "key": "icon", "label": "Icon (when Button display = Icon)", "type": "icon", "defaultValue": "lightning-bolt" }
+        ]
+      }
+    ]
+  }
+}
