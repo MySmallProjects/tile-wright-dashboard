@@ -25,10 +25,10 @@ Work proceeds one phase at a time. Each phase is complete when its **Done when**
 - **Scope:** `addon.json` manifest, in-process assembly loader, resilience to failed addons, zip upload with zip-slip/size validation, enable/disable + config recovery override, pending/restart flow, tile contract, tile picker, schema-generated settings forms (including repeating groups, dynamic options, write-only secrets), custom settings element support, addon-level settings, and built-in themes + MDI icon pack as addons.
 - **Done when:** All items in [Testing — Phase 5](testing.md#phase-5-addon-framework) pass.
 
-## Phase 6: Initial Addons — *Built (Awaiting Verification)*
-- **Scope:** Build in order: Clock, Notes, Countdown, Links, Image, API/Stock, Home Assistant (read), Home Assistant (control).
+## Phase 6: Initial Addons — *Complete*
+- **Scope:** Build in order: Clock, Notes, Countdown, Links, Image, API/Stock, Home Assistant (read), Home Assistant (control), plus Open-Meteo Weather, HTTP GET Button, `icons-cmas`, and `theme-cyberpunk`.
 - **Done when:** All items in [Testing — Phase 6](testing.md#phase-6-initial-addons) pass.
 
-## Phase 7: Polish and Scripts — *Pending*
+## Phase 7: Polish and Scripts — *Built (Awaiting Verification)*
 - **Scope:** Performance and tablet/device testing, complete documentation (`architecture.md`, `addons.md`, `deployment.md`), `scripts/dev-setup.sh`, and `scripts/install.sh`.
 - **Done when:** All items in [Testing — Phase 7](testing.md#phase-7-polish-and-scripts) pass.

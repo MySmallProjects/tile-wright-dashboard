@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Tilewright Development Setup Script (Ubuntu / Debian)
+# Safe to re-run. Does not assume git history for versioning.
+
+AUTO_YES=false
+for arg in "$@"; do
+  case "$arg" in
+    -y|--yes) AUTO_YES=true ;;
+    *)
+      echo "Unknown option: $arg"
+      echo "Usage: $0 [--yes]"
+      exit 1
+      ;;
+  esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "=== Tilewright Development Setup ==="
+echo "Repository: $REPO_ROOT"
+echo ""
+
+if [[ ! -f /etc/os-release ]]; then
+  echo "Error: Cannot detect OS (/etc/os-release missing)."
+  echo "Please install .NET 10 SDK and Node.js 18+ manually, then run:"
+  echo "  npm --prefix src/web install && npm --prefix src/web run build"
+  echo "  dotnet test src/Tilewright.sln"
+  exit 1
+fi
+
+# shellcheck disable=SC1091
+source /etc/os-release
+if [[ "${ID:-}" != "ubuntu" && "${ID:-}" != "debian" && "${ID_LIKE:-}" != *"debian"* && "${ID_LIKE:-}" != *"ubuntu"* ]]; then
+  echo "Unsupported OS: ${PRETTY_NAME:-unknown}."
+  echo "This script targets Ubuntu/Debian. Manual setup steps:"
+  echo "  1. Install .NET 10 SDK (https://dotnet.microsoft.com/download/dotnet/10.0)"
+  echo "  2. Install Node.js 18+ and npm"
+  echo "  3. Run: npm --prefix src/web install && npm --prefix src/web run build"
+  echo "  4. Run: dotnet test src/Tilewright.sln"
+  exit 1
+fi
+
+echo "Detected OS: ${PRETTY_NAME:-$ID}"
+echo ""
+echo "Planned steps:"
+echo "  1. Check/install .NET 10 SDK (needed to build and run Tilewright.Server)"
+echo "  2. Check/install Node.js & npm (needed to build the Svelte frontend into wwwroot)"
+echo "  3. Restore NuGet packages and install frontend npm packages"
+echo "  4. Build frontend (src/web -> wwwroot) and run backend xUnit tests"
+echo ""
+
+if [[ "$AUTO_YES" != "true" ]]; then
+  read -r -p "Proceed? [y/N] " reply
+  if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+    echo "Aborted."
+    exit 0
+  fi
+fi
+
+SUDO=""
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    SUDO="sudo"
+  else
+    echo "Error: sudo is required to install missing system packages."
+    exit 1
+  fi
+fi
+
+# 1. Check / install .NET 10 SDK
+has_dotnet10=false
+if command -v dotnet >/dev/null 2>&1; then
+  if dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; then
+    has_dotnet10=true
+  fi
+fi
+
+if [[ "$has_dotnet10" == "true" ]]; then
+  echo "[OK] .NET 10 SDK is already installed."
+else
+  echo "[Installing] .NET 10 SDK..."
+  $SUDO apt-get update
+  if apt-cache show dotnet-sdk-10.0 >/dev/null 2>&1; then
+    $SUDO apt-get install -y dotnet-sdk-10.0
+  else
+    $SUDO apt-get install -y curl ca-certificates
+    curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+    chmod +x /tmp/dotnet-install.sh
+    /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+    rm -f /tmp/dotnet-install.sh
+    export PATH="$HOME/.dotnet:$PATH"
+    echo "[Note] Installed .NET 10 SDK to $HOME/.dotnet (add to PATH in ~/.bashrc if needed)."
+  fi
+fi
+
+# 2. Check / install Node.js & npm (required to build Svelte frontend)
+if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+  echo "[OK] Node.js ($(node -v)) and npm ($(npm -v)) are already installed."
+else
+  echo "[Installing] Node.js and npm..."
+  $SUDO apt-get update
+  $SUDO apt-get install -y nodejs npm
+fi
+
+# 3. Restore & install dependencies
+echo ""
+echo "[Restoring] NuGet packages..."
+dotnet restore "$REPO_ROOT/src/Tilewright.sln"
+
+echo "[Installing] Frontend npm packages..."
+npm --prefix "$REPO_ROOT/src/web" install
+
+# 4. Build backend, build frontend (matching build number), and run tests
+echo ""
+echo "[Building] Backend solution..."
+dotnet build "$REPO_ROOT/src/Tilewright.sln" --no-restore
+
+echo "[Building] Frontend static bundle (src/web -> wwwroot)..."
+npm --prefix "$REPO_ROOT/src/web" run build
+
+echo "[Testing] Running xUnit suite..."
+dotnet test "$REPO_ROOT/src/Tilewright.sln" --no-build
+
+echo ""
+echo "=== Setup Complete ==="
+echo "Run the development server (use --no-build so server & frontend versions match):"
+echo "  dotnet run --project src/Tilewright.Server --no-build"
+echo ""
+echo "Optional hot-reload frontend dev server (proxies /api and /hubs to :5050):"
+echo "  npm --prefix src/web run dev"
+echo ""
+echo "Dev data folder: $REPO_ROOT/src/Tilewright.Server/data/"
+echo "Documentation:   $REPO_ROOT/docs/"

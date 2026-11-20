@@ -65,9 +65,10 @@ Restart the server for changes to take effect.
 
 ## Documentation
 
+- [Architecture](docs/architecture.md) — terminology, components, data flow, in-process trust model, storage, and HTTPS detection
 - [Addons Guide](docs/addons.md) — manifest reference, tile contract, schema types, and worked example
+- [Deployment Guide](docs/deployment.md) — Ubuntu systemd unit, nginx config, backups, upgrades, and recovery
 - [Decisions Log](docs/decisions.md) — recorded architectural and product decisions
 - [Phases](docs/phases.md) — build roadmap and "done when" criteria
 - [Testing Checklists](docs/testing.md) — manual test checklists per phase and device matrix
 - [Future Improvements](docs/improvements.md) — hardening and ideas deferred for later
-- *(Planned in later phases)* `docs/architecture.md`, `docs/addons.md`, `docs/deployment.md`

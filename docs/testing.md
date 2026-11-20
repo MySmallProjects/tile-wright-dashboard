@@ -267,4 +267,34 @@ dotnet run --project src/Tilewright.Server --no-build
   - *Expected:* Sensor displays live state and updates via HA WebSocket; Control toggles the entity through the server and reflects external changes live. Without HA configured, both tiles show a clean **"Needs setup"** placeholder.
 
 ## Phase 7: Polish and Scripts
-*(Checklist will be detailed at the end of Phase 7.)*
+
+### 7.1 Automated Verification
+- [ ] **Full test suite & frontend build:**
+  ```bash
+  dotnet test src/Tilewright.sln
+  npm --prefix src/web run check
+  npm --prefix src/web run build
+  ```
+  - *Expected:* All 20+ xUnit tests pass, `svelte-check` reports 0 errors, and Vite outputs static files to `wwwroot/`.
+- [ ] **Script syntax & idempotency:** Run `bash -n scripts/dev-setup.sh && bash -n scripts/install.sh`.
+  - *Expected:* Both scripts pass syntax validation with zero errors.
+
+### 7.2 Development Setup (`scripts/dev-setup.sh`)
+- [ ] **Run `scripts/dev-setup.sh` on Ubuntu/Debian:**
+  ```bash
+  ./scripts/dev-setup.sh
+  ```
+  - *Expected:* Prints what it will install and asks for confirmation (`--yes` skips); skips already-installed tools; restores, builds, runs tests, and prints run/data/docs instructions. Re-running it a second time succeeds cleanly.
+
+### 7.3 Production Install & Upgrade (`scripts/install.sh`)
+- [ ] **Run `scripts/install.sh` on Ubuntu server:**
+  ```bash
+  ./scripts/install.sh
+  ```
+  - *Expected:* Prints the 8-step numbered plan and waits for confirmation; builds from source and publishes to `/opt/tilewright`; creates `tilewright` user and `/var/lib/tilewright` + `/etc/tilewright`; enables and starts `tilewright.service`; tests `/api/version` and prints the post-install notes + nginx config.
+- [ ] **Upgrade safety (re-run `install.sh`):** Create a dashboard and a tile, then re-run `./scripts/install.sh --yes`.
+  - *Expected:* Service upgrades cleanly and all dashboards, sessions, secrets, and addons in `/var/lib/tilewright` remain intact.
+
+### 7.4 Tablet & Device Matrix Polish
+- [ ] **Device Matrix pass:** Verify View mode, Edit mode (drag, resize, pin), swipe, theme switching (Light / Dark / Cyberpunk), and backdrop blur toggle on Tablet (primary), Desktop (secondary), and Phone (extra).
+- [ ] **Documentation check:** Confirm [architecture.md](architecture.md), [addons.md](addons.md), [deployment.md](deployment.md), [decisions.md](decisions.md), and [README.md](../README.md) are accurate and complete.
