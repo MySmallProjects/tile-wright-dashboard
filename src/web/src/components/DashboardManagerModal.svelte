@@ -1,8 +1,8 @@
 <script lang="ts">
   import { api, ApiError } from '../lib/api';
-  import { DASHBOARD_ICON_CHOICES } from '../lib/icons';
   import type { BackgroundSettings, DashboardSummary } from '../types';
   import Icon from './Icon.svelte';
+  import IconPicker from './IconPicker.svelte';
 
   let {
     dashboards,
@@ -206,20 +206,11 @@
             <Icon name="plus" size={18} /> Create
           </button>
         </div>
-        <div class="icon-picker">
-          {#each DASHBOARD_ICON_CHOICES as iconName}
-            <button
-              type="button"
-              class="icon-choice"
-              class:selected={newIcon === iconName}
-              title={iconName}
-              aria-label={`Select icon ${iconName}`}
-              onclick={() => (newIcon = iconName)}
-            >
-              <Icon name={iconName} size={20} />
-            </button>
-          {/each}
-        </div>
+        <IconPicker
+          value={newIcon}
+          compact={true}
+          onSelect={(refId) => (newIcon = refId)}
+        />
       </form>
 
       <div class="dash-list">
@@ -232,19 +223,11 @@
                 <div class="create-row">
                   <input type="text" bind:value={editName} placeholder="Dashboard name" />
                 </div>
-                <div class="icon-picker">
-                  {#each DASHBOARD_ICON_CHOICES as iconName}
-                    <button
-                      type="button"
-                      class="icon-choice"
-                      class:selected={editIcon === iconName}
-                      title={iconName}
-                      onclick={() => (editIcon = iconName)}
-                    >
-                      <Icon name={iconName} size={18} />
-                    </button>
-                  {/each}
-                </div>
+                <IconPicker
+                  value={editIcon}
+                  compact={true}
+                  onSelect={(refId) => (editIcon = refId)}
+                />
 
                 <div class="bg-row">
                   <label for="dashBgMode">Background override</label>

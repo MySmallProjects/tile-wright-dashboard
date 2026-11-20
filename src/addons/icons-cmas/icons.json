@@ -1,0 +1,46 @@
+{
+  "icons": [
+    {
+      "name": "birthday-cake",
+      "label": "Birthday Cake",
+      "file": "icons/birthday-cake-color-icon.png",
+      "color": true
+    },
+    {
+      "name": "christmas-day-25",
+      "label": "Christmas Day 25",
+      "file": "icons/christmas-day-25-icon.png",
+      "color": true
+    },
+    {
+      "name": "christmas-tree",
+      "label": "Christmas Tree",
+      "file": "icons/christmas-decorated-tree-icon.png",
+      "color": true
+    },
+    {
+      "name": "golden-bell",
+      "label": "Golden Bell",
+      "file": "icons/christmas-golden-bell-with-ribbon-icon.png",
+      "color": true
+    },
+    {
+      "name": "december-25",
+      "label": "December 25",
+      "file": "icons/december-25-icon.png",
+      "color": true
+    },
+    {
+      "name": "gift-box",
+      "label": "Gift Box",
+      "file": "icons/gift-box-with-ribbon-bow-tied-icon.png",
+      "color": true
+    },
+    {
+      "name": "snowman",
+      "label": "Snowman",
+      "file": "icons/snowman-with-two-snowballs-stacked-icon.png",
+      "color": true
+    }
+  ]
+}

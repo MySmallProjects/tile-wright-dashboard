@@ -27,10 +27,24 @@ public sealed record AddonInfoDto(
     bool ForcedDisabled,
     AddonContributions Contributes);
 
+public sealed record AddonIconItemDto(
+    string RefId,
+    string Name,
+    string Label,
+    string ImageUrl,
+    bool Color);
+
+public sealed record AddonIconPackDto(
+    string AddonId,
+    string PackId,
+    string PackName,
+    List<AddonIconItemDto> Icons);
+
 public sealed record AddonOverviewDto(
     bool RestartRequired,
     List<AddonInfoDto> Addons,
-    List<AddonTileDto> AvailableTiles);
+    List<AddonTileDto> AvailableTiles,
+    List<AddonIconPackDto> IconPacks);
 
 public sealed class LoadedAddon
 {
@@ -305,6 +319,7 @@ public sealed class AddonManager(
     {
         var list = new List<AddonInfoDto>();
         var tiles = new List<AddonTileDto>();
+        var iconPacks = new List<AddonIconPackDto>();
 
         var pendingInstalls = Directory.Exists(PendingInstallRoot)
             ? Directory.GetDirectories(PendingInstallRoot).Select(Path.GetFileName).Where(x => x is not null).ToHashSet(StringComparer.OrdinalIgnoreCase)!
@@ -345,6 +360,41 @@ public sealed class AddonManager(
                         $"{a.Manifest.Id}:{t.Id}",
                         t));
                 }
+
+                foreach (var pack in a.Manifest.Contributes.IconPacks)
+                {
+                    if (string.IsNullOrWhiteSpace(pack.ManifestFile)) continue;
+                    var packManifestPath = ResolveAssetPath(a.Manifest.Id, pack.ManifestFile);
+                    if (packManifestPath is null) continue;
+                    try
+                    {
+                        var packJson = File.ReadAllText(packManifestPath);
+                        var parsed = JsonSerializer.Deserialize<IconPackManifestFile>(packJson, JsonFileStore.SerializerOptions);
+                        if (parsed?.Icons is null) continue;
+
+                        var items = new List<AddonIconItemDto>();
+                        foreach (var ic in parsed.Icons)
+                        {
+                            if (string.IsNullOrWhiteSpace(ic.Name) || string.IsNullOrWhiteSpace(ic.File)) continue;
+                            if (ResolveAssetPath(a.Manifest.Id, ic.File) is null) continue;
+                            var relUrl = $"/api/addons/{Uri.EscapeDataString(a.Manifest.Id)}/assets/{ic.File.TrimStart('/')}";
+                            items.Add(new AddonIconItemDto(
+                                RefId: $"{pack.Id}:{ic.Name}",
+                                Name: ic.Name,
+                                Label: string.IsNullOrWhiteSpace(ic.Label) ? ic.Name : ic.Label,
+                                ImageUrl: relUrl,
+                                Color: ic.Color));
+                        }
+                        if (items.Count > 0)
+                        {
+                            iconPacks.Add(new AddonIconPackDto(a.Manifest.Id, pack.Id, pack.Name, items));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to read icon pack manifest for {AddonId}/{PackId}", a.Manifest.Id, pack.Id);
+                    }
+                }
             }
         }
 
@@ -371,7 +421,7 @@ public sealed class AddonManager(
                 Contributes: m?.Contributes ?? new AddonContributions()));
         }
 
-        return new AddonOverviewDto(_restartRequired || pendingInstalls.Count > 0 || pendingRemovals.Count > 0, list, tiles);
+        return new AddonOverviewDto(_restartRequired || pendingInstalls.Count > 0 || pendingRemovals.Count > 0, list, tiles, iconPacks);
     }
 
     public async Task<ZipValidationResult> StageInstallFromZipAsync(

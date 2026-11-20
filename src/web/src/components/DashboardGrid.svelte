@@ -4,7 +4,7 @@
   import 'gridstack/dist/gridstack.min.css';
   import { api } from '../lib/api';
   import { ensureAddonScriptLoaded } from '../lib/addonLoader';
-  import { resolveMdiPath } from '../lib/icons';
+  import { resolveIcon, resolveMdiPath } from '../lib/icons';
   import type {
     AddonOverview,
     AddonTile,
@@ -209,7 +209,8 @@
         height: tile.h,
         addonId: def.addonId,
         tileId: tile.id,
-        resolveIconPath: resolveMdiPath
+        resolveIconPath: resolveMdiPath,
+        resolveIcon
       };
 
       wc.addEventListener('tile-data-changed', async (ev: Event) => {

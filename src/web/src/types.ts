@@ -175,8 +175,24 @@ export interface AddonTile {
   spec: TileTypeContribution;
 }
 
+export interface AddonIconItem {
+  refId: string;
+  name: string;
+  label: string;
+  imageUrl: string;
+  color: boolean;
+}
+
+export interface AddonIconPack {
+  addonId: string;
+  packId: string;
+  packName: string;
+  icons: AddonIconItem[];
+}
+
 export interface AddonOverview {
   restartRequired: boolean;
   addons: AddonInfo[];
   availableTiles: AddonTile[];
+  iconPacks: AddonIconPack[];
 }

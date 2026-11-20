@@ -89,9 +89,17 @@ class TwAddonCountdown extends HTMLElement {
     }
 
     const iconName = this._settings.icon || '';
-    const iconPath = iconName && typeof this._context?.resolveIconPath === 'function'
-      ? this._context.resolveIconPath(iconName)
-      : '';
+    const resolvedIcon = iconName && typeof this._context?.resolveIcon === 'function'
+      ? this._context.resolveIcon(iconName)
+      : (iconName && typeof this._context?.resolveIconPath === 'function'
+          ? { kind: 'svg', path: this._context.resolveIconPath(iconName) }
+          : null);
+
+    const iconHtml = !resolvedIcon
+      ? ''
+      : resolvedIcon.kind === 'image'
+        ? `<div class="icon"><img src="${resolvedIcon.url}" width="32" height="32" alt="" style="object-fit:contain;display:block;" /></div>`
+        : `<div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${resolvedIcon.path}" /></svg></div>`;
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -114,7 +122,7 @@ class TwAddonCountdown extends HTMLElement {
       <div class="wrap">
         ${needsSetup
           ? '<div class="setup"><strong>Needs setup</strong><br>Set a label and date in tile settings.</div>'
-          : `${iconPath ? `<div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${iconPath}" /></svg></div>` : ''}<div class="big">${headline}</div><div class="sub">${sub}</div>`}
+          : `${iconHtml}<div class="big">${headline}</div><div class="sub">${sub}</div>`}
       </div>
     `;
   }

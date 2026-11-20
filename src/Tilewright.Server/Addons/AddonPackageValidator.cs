@@ -235,6 +235,18 @@ public static class AddonPackageValidator
             }
         }
 
+        foreach (var pack in manifest.Contributes.IconPacks)
+        {
+            if (string.IsNullOrWhiteSpace(pack.Id) || string.IsNullOrWhiteSpace(pack.Name))
+            {
+                return "Every icon pack contribution requires 'id' and 'name'.";
+            }
+            if (!string.IsNullOrWhiteSpace(pack.ManifestFile) && !FileExistsInsideRoot(pack.ManifestFile))
+            {
+                return $"Icon pack '{pack.Id}' references missing manifest file '{pack.ManifestFile}'.";
+            }
+        }
+
         return null;
     }
 }

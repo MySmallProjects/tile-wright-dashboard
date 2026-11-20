@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { api } from './lib/api';
   import { syncAddonThemeStylesheets } from './lib/addonLoader';
+  import { registerAddonIconPacks } from './lib/icons';
   import { DashboardHubClient } from './lib/signalr';
   import {
     applyThemeAndSurface,
@@ -61,7 +62,8 @@
   let addonOverview = $state<AddonOverview>({
     restartRequired: false,
     addons: [],
-    availableTiles: []
+    availableTiles: [],
+    iconPacks: []
   });
   let editMode = $state(false);
   let showSettings = $state(false);
@@ -153,6 +155,7 @@
   async function refreshAddons() {
     try {
       const ov = await api.getAddons();
+      registerAddonIconPacks(ov.iconPacks ?? []);
       addonOverview = ov;
       syncAddonThemeStylesheets(ov.addons);
     } catch {

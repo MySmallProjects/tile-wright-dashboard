@@ -1,0 +1,17 @@
+{
+  "id": "icons-cmas",
+  "name": "Christmas & Celebration Icons",
+  "version": "1.0.0",
+  "description": "Full-colour PNG icons for Christmas, birthdays, and celebrations.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "iconPacks": [
+      {
+        "id": "cmas",
+        "name": "Christmas & Celebration",
+        "manifestFile": "icons.json"
+      }
+    ]
+  }
+}

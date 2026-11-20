@@ -97,10 +97,44 @@ export const DASHBOARD_ICON_CHOICES = [
   'chart-line'
 ];
 
+import type { AddonIconItem, AddonIconPack } from '../types';
+
+export type ResolvedIcon =
+  | { kind: 'svg'; path: string }
+  | { kind: 'image'; url: string; label: string; color: boolean };
+
+let registeredPacks: AddonIconPack[] = [];
+const addonIconIndex = new Map<string, AddonIconItem>();
+
+export function registerAddonIconPacks(packs: AddonIconPack[]): void {
+  registeredPacks = packs ?? [];
+  addonIconIndex.clear();
+  for (const pack of registeredPacks) {
+    for (const ic of pack.icons) {
+      addonIconIndex.set(ic.refId.toLowerCase(), ic);
+    }
+  }
+}
+
+export function getAddonIconPacks(): AddonIconPack[] {
+  return registeredPacks;
+}
+
 export function resolveMdiPath(name: string | null | undefined): string {
   if (!name) return mdiViewDashboard;
   const clean = name.replace(/^mdi:/i, '').trim().toLowerCase();
   return ICON_MAP[clean] ?? mdiViewDashboard;
+}
+
+export function resolveIcon(ref: string | null | undefined): ResolvedIcon {
+  if (ref) {
+    const key = ref.trim().toLowerCase();
+    const imgIcon = addonIconIndex.get(key);
+    if (imgIcon) {
+      return { kind: 'image', url: imgIcon.imageUrl, label: imgIcon.label, color: imgIcon.color };
+    }
+  }
+  return { kind: 'svg', path: resolveMdiPath(ref) };
 }
 
 export function listAvailableIcons(): string[] {

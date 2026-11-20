@@ -32,6 +32,11 @@ Every addon must have `addon.json` at its root:
 - `assembly`: Relative path to the `.dll` inside the addon package.
 - `entryType`: Full type name implementing `Tilewright.AddonContracts.IAddonModule`.
 
+### Icon Pack Contribution (`contributes.iconPacks[]`)
+- `id`: Pack identifier (used as prefix `<packId>:<iconName>`, e.g. `cmas:christmas-tree`).
+- `name`: Display name shown as a filter chip in all icon pickers.
+- `manifestFile`: Relative path to a JSON file listing `{ "icons": [{ "name", "label", "file", "color": true }] }` (supports PNG, WebP, SVG). Full-colour icons render as `<img>` without recolouring; MDI SVGs use `currentColor`.
+
 ---
 
 ## 2. Settings Schema Field Types

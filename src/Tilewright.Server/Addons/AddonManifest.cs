@@ -87,6 +87,19 @@ public sealed class IconPackContribution
     public string? ManifestFile { get; set; }
 }
 
+public sealed class IconPackManifestFile
+{
+    public List<IconPackItemSpec> Icons { get; set; } = [];
+}
+
+public sealed class IconPackItemSpec
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Label { get; set; }
+    public string File { get; set; } = string.Empty;
+    public bool Color { get; set; } = true;
+}
+
 public sealed class SelectOptionSpec
 {
     public string Value { get; set; } = string.Empty;

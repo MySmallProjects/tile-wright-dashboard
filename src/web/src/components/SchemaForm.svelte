@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { listAvailableIcons } from '../lib/icons';
   import type { SelectOptionSpec, SettingsFieldSchema } from '../types';
   import Icon from './Icon.svelte';
+  import IconPicker from './IconPicker.svelte';
 
   let {
     schema,
@@ -50,10 +50,7 @@
   let secretDrafts = $state<Record<string, string>>({});
   let clearedSecrets = $state<Record<string, boolean>>({});
   let dynamicOptions = $state<Record<string, SelectOptionSpec[]>>({});
-  let iconSearch = $state<Record<string, string>>({});
   let errors = $state<Record<string, string>>({});
-
-  const allIcons = listAvailableIcons();
 
   onMount(async () => {
     if (!addonId) return;
@@ -206,25 +203,10 @@
           {/each}
         </select>
       {:else if field.type === 'icon'}
-        {@const query = (iconSearch[field.key] ?? '').toLowerCase()}
-        <input
-          type="text"
-          placeholder="Search icons (e.g. home, clock, sofa)..."
-          bind:value={iconSearch[field.key]}
+        <IconPicker
+          value={String(values[field.key] ?? '')}
+          onSelect={(refId) => (values[field.key] = refId)}
         />
-        <div class="icon-grid">
-          {#each allIcons.filter((ic) => !query || ic.includes(query)).slice(0, 24) as ic}
-            <button
-              type="button"
-              class="icon-opt"
-              class:selected={values[field.key] === ic}
-              title={ic}
-              onclick={() => (values[field.key] = ic)}
-            >
-              <Icon name={ic} size={20} />
-            </button>
-          {/each}
-        </div>
       {:else if field.type === 'secret'}
         <div class="secret-row">
           <input
