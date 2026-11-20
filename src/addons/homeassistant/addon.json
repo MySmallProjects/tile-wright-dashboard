@@ -11,8 +11,8 @@
       "entryType": "Tilewright.Addons.BuiltIn.HomeAssistantAddonModule"
     },
     "addonSettingsSchema": [
-      { "key": "baseUrl", "label": "Home Assistant Base URL", "type": "url", "required": true, "helpText": "e.g. http://homeassistant.local:8123" },
-      { "key": "accessToken", "label": "Long-Lived Access Token", "type": "secret", "required": true, "helpText": "Created in your Home Assistant profile. Stored write-only on the server." }
+      { "key": "baseUrl", "label": "Home Assistant Base URL", "type": "url", "required": false, "helpText": "e.g. http://homeassistant.local:8123 (leave blank to disconnect)" },
+      { "key": "accessToken", "label": "Long-Lived Access Token", "type": "secret", "required": false, "helpText": "Created in your Home Assistant profile. Stored write-only on the server." }
     ],
     "tiles": [
       {

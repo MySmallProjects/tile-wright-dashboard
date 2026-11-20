@@ -67,6 +67,7 @@ class TwAddonApiValue extends HTMLElement {
           jsonPath: this._settings.jsonPath || '',
           prefix: this._settings.prefix || '',
           suffix: this._settings.suffix || '',
+          numberFormat: this._settings.numberFormat || '',
           decimals: this._settings.decimals !== '' && this._settings.decimals != null ? Number(this._settings.decimals) : null,
           refreshInterval: this._settings.refreshInterval || '2h'
         },

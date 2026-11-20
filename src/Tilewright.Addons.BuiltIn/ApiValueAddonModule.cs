@@ -38,11 +38,12 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
         var cacheTtl = DurationParser.Parse(refreshRaw, TimeSpan.FromMinutes(15), TimeSpan.FromSeconds(10));
         var prefix = GetString(payload.Value, "prefix") ?? string.Empty;
         var suffix = GetString(payload.Value, "suffix") ?? string.Empty;
+        var numberFormat = GetString(payload.Value, "numberFormat")?.Trim();
         int? decimals = payload.Value.TryGetProperty("decimals", out var decEl) && decEl.ValueKind == JsonValueKind.Number
             ? decEl.GetInt32()
             : null;
 
-        var cacheKey = $"{url}|{jsonPath}|{prefix}|{suffix}|{decimals}";
+        var cacheKey = $"{url}|{jsonPath}|{prefix}|{suffix}|{numberFormat}|{decimals}";
         if (_cache.TryGetValue(cacheKey, out var hit) && hit.ExpiresAt > DateTimeOffset.UtcNow)
         {
             return new { value = hit.Formatted, raw = hit.Raw, cached = true, fetchedAt = DateTimeOffset.UtcNow };
@@ -87,12 +88,7 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
                 _ => extracted.Value.GetRawText()
             };
 
-            var display = rawStr;
-            if (decimals.HasValue && decimals.Value >= 0 &&
-                double.TryParse(rawStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var num))
-            {
-                display = num.ToString($"F{Math.Clamp(decimals.Value, 0, 6)}", CultureInfo.InvariantCulture);
-            }
+            var display = FormatNumericValue(rawStr, numberFormat, decimals);
 
             var formatted = $"{prefix}{display}{suffix}";
             _cache[cacheKey] = new CachedValue(formatted, rawStr, DateTimeOffset.UtcNow.Add(cacheTtl));
@@ -104,6 +100,33 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
             host.Logger.LogWarning(ex, "API value fetch failed.");
             return new { error = $"Fetch failed: {ex.Message}" };
         }
+    }
+
+    public static string FormatNumericValue(string rawStr, string? numberFormat, int? decimals)
+    {
+        if (!double.TryParse(rawStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var num))
+        {
+            return rawStr;
+        }
+
+        if (!string.IsNullOrWhiteSpace(numberFormat))
+        {
+            try
+            {
+                return num.ToString(numberFormat, CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
+            {
+                // Fall back to decimals/raw if format string is invalid
+            }
+        }
+
+        if (decimals.HasValue && decimals.Value >= 0)
+        {
+            return num.ToString($"F{Math.Clamp(decimals.Value, 0, 6)}", CultureInfo.InvariantCulture);
+        }
+
+        return rawStr;
     }
 
     private static string? GetString(JsonElement el, string prop) =>

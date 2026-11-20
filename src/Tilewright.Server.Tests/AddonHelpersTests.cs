@@ -71,4 +71,14 @@ public sealed class AddonHelpersTests
         Assert.Equal(TimeSpan.FromSeconds(10), DurationParser.Parse("2s", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(10)));
         Assert.Equal(TimeSpan.FromMinutes(5), DurationParser.Parse("invalid", TimeSpan.FromMinutes(5)));
     }
+
+    [Fact]
+    public void ApiValueFormatting_AppliesDotNetNumberFormats()
+    {
+        Assert.Equal("10,000", ApiValueAddonModule.FormatNumericValue("10000", "#,##0", 2));
+        Assert.Equal("12,345.68", ApiValueAddonModule.FormatNumericValue("12345.678", "#,##0.00", 0));
+        Assert.Equal("10,000", ApiValueAddonModule.FormatNumericValue("10000", "N0", 2));
+        Assert.Equal("42.50", ApiValueAddonModule.FormatNumericValue("42.5", null, 2));
+        Assert.Equal("online", ApiValueAddonModule.FormatNumericValue("online", "#,##0", 2));
+    }
 }

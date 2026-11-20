@@ -30,6 +30,7 @@
           { "key": "jsonPath", "label": "JSON path", "type": "text", "helpText": "Dot/bracket path, e.g. chart.result[0].meta.regularMarketPrice" },
           { "key": "prefix", "label": "Prefix", "type": "text", "helpText": "e.g. £ or $" },
           { "key": "suffix", "label": "Suffix", "type": "text", "helpText": "e.g. p, %, USD" },
+          { "key": "numberFormat", "label": "Number format (.NET)", "type": "text", "helpText": "Optional .NET format string, e.g. #,##0 or #,##0.00 or N0 (overrides Decimal places)." },
           { "key": "decimals", "label": "Decimal places", "type": "number", "min": 0, "max": 6, "defaultValue": 2 },
           { "key": "logoUrl", "label": "Logo URL (optional)", "type": "url" },
           { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" }
