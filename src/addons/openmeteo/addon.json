@@ -1,0 +1,65 @@
+{
+  "id": "openmeteo",
+  "name": "Open-Meteo Weather",
+  "version": "1.0.0",
+  "description": "3-day weather forecast from Open-Meteo with local offline weather icons and sunrise/sunset times.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.OpenMeteoAddonModule"
+    },
+    "tiles": [
+      {
+        "id": "forecast",
+        "name": "3-Day Weather Forecast",
+        "description": "Shows a 3-day Open-Meteo forecast (day of week, weather icon, optional sunrise & sunset).",
+        "icon": "weather-partly-cloudy",
+        "element": { "tagName": "tw-addon-openmeteo", "script": "openmeteo-tile.js" },
+        "defaultSize": { "w": 6, "h": 3 },
+        "minSize": { "w": 4, "h": 2 },
+        "maxSize": { "w": 16, "h": 8 },
+        "settingsSchema": [
+          {
+            "key": "latitude",
+            "label": "Latitude",
+            "type": "number",
+            "required": true,
+            "min": -90,
+            "max": 90,
+            "defaultValue": 52.52
+          },
+          {
+            "key": "longitude",
+            "label": "Longitude",
+            "type": "number",
+            "required": true,
+            "min": -180,
+            "max": 180,
+            "defaultValue": 0.41
+          },
+          {
+            "key": "timezone",
+            "label": "Timezone",
+            "type": "text",
+            "defaultValue": "Europe/London",
+            "helpText": "IANA timezone (e.g. Europe/London) or 'auto'."
+          },
+          {
+            "key": "showSunTimes",
+            "label": "Show sunrise & sunset",
+            "type": "toggle",
+            "defaultValue": true
+          },
+          {
+            "key": "refreshInterval",
+            "label": "Refresh interval",
+            "type": "duration",
+            "defaultValue": "30m"
+          }
+        ]
+      }
+    ]
+  }
+}

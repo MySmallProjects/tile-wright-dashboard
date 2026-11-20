@@ -81,4 +81,14 @@ public sealed class AddonHelpersTests
         Assert.Equal("42.50", ApiValueAddonModule.FormatNumericValue("42.5", null, 2));
         Assert.Equal("online", ApiValueAddonModule.FormatNumericValue("online", "#,##0", 2));
     }
+
+    [Fact]
+    public void OpenMeteoHelpers_MapWmoCodesAndExtractTimes()
+    {
+        Assert.Equal(("Clear sky", "1.svg"), OpenMeteoAddonModule.MapWmoCode(0));
+        Assert.Equal(("Partly cloudy", "3.svg"), OpenMeteoAddonModule.MapWmoCode(2));
+        Assert.Equal(("Moderate rain", "10.svg"), OpenMeteoAddonModule.MapWmoCode(63));
+        Assert.Equal(("Thunderstorm", "11.svg"), OpenMeteoAddonModule.MapWmoCode(95));
+        Assert.Equal("07:30", OpenMeteoAddonModule.ExtractTimeHHmm("2026-11-20T07:30"));
+    }
 }

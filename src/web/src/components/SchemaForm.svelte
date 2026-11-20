@@ -183,6 +183,7 @@
         <input
           id={`sf-${field.key}`}
           type="number"
+          step="any"
           min={field.min ?? undefined}
           max={field.max ?? undefined}
           bind:value={values[field.key]}

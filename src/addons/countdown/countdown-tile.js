@@ -88,6 +88,7 @@ class TwAddonCountdown extends HTMLElement {
       }
     }
 
+    const layout = this._settings.layout || 'stacked';
     const iconName = this._settings.icon || '';
     const resolvedIcon = iconName && typeof this._context?.resolveIcon === 'function'
       ? this._context.resolveIcon(iconName)
@@ -98,32 +99,100 @@ class TwAddonCountdown extends HTMLElement {
     const iconHtml = !resolvedIcon
       ? ''
       : resolvedIcon.kind === 'image'
-        ? `<div class="icon"><img src="${resolvedIcon.url}" width="32" height="32" alt="" style="object-fit:contain;display:block;" /></div>`
-        : `<div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${resolvedIcon.path}" /></svg></div>`;
+        ? `<div class="icon"><img src="${resolvedIcon.url}" alt="" /></div>`
+        : `<div class="icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${resolvedIcon.path}" /></svg></div>`;
+
+    const splitNumber = days === 0 ? 'Today' : String(Math.abs(days ?? 0));
+    const splitUnit = days === 0 ? '' : (days === 1 ? 'day left' : days > 1 ? 'days left' : (days === -1 ? 'day ago' : 'days ago'));
+
+    const bodyHtml = needsSetup
+      ? '<div class="wrap"><div class="setup"><strong>Needs setup</strong><br>Set a label and date in tile settings.</div></div>'
+      : layout === 'split'
+        ? `
+          <div class="split-wrap">
+            <div class="split-top ${iconHtml ? '' : 'no-icon'}">
+              ${iconHtml ? `<div class="split-left">${iconHtml}</div>` : ''}
+              <div class="split-right">
+                <div class="split-num">${splitNumber}</div>
+                ${splitUnit ? `<div class="split-unit">${splitUnit}</div>` : ''}
+              </div>
+            </div>
+            <div class="split-bottom">${label}</div>
+          </div>
+        `
+        : `<div class="wrap">${iconHtml}<div class="big">${headline}</div><div class="sub">${sub}</div></div>`;
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: flex; width: 100%; height: 100%; color: var(--tw-text); font-family: var(--tw-font-family); }
+        *, *::before, *::after { box-sizing: border-box; }
+        :host {
+          display: block; position: relative; width: 100%; height: 100%;
+          min-height: 0; overflow: hidden;
+          color: var(--tw-text); font-family: var(--tw-font-family);
+        }
         .wrap {
-          flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-          text-align: center; padding: var(--tw-tile-padding, 14px); gap: 4px;
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center; padding: 8px 10px; gap: 4px; overflow: hidden;
         }
         .icon {
           color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
-          display: flex; align-items: center; justify-content: center; margin-bottom: 2px;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .wrap .icon img,
+        .wrap .icon svg {
+          width: 28px; height: 28px; object-fit: contain; display: block;
         }
         .big {
-          font-size: 1.9rem; font-weight: 700; line-height: 1.05;
+          font-size: 1.75rem; font-weight: 700; line-height: 1.05;
           color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
         }
-        .sub { font-size: 0.9rem; color: var(--tw-text-muted); font-weight: 500; }
-        .setup { font-size: 0.86rem; color: var(--tw-text-muted); }
+        .sub { font-size: 0.88rem; color: var(--tw-text-muted); font-weight: 500; }
+        .setup { font-size: 0.84rem; color: var(--tw-text-muted); }
+
+        /* Split layout: absolute inset:0 flex column so bottom label is NEVER pushed out */
+        .split-wrap {
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column;
+          padding: 6px 10px; gap: 4px; overflow: hidden;
+        }
+        .split-top {
+          flex: 1 1 0; min-height: 0;
+          display: flex; align-items: center; justify-content: space-evenly;
+          gap: 8px; overflow: hidden;
+        }
+        .split-left {
+          flex: 0 1 auto; display: flex; align-items: center; justify-content: center;
+          max-height: 100%; overflow: hidden;
+        }
+        .split-left .icon img,
+        .split-left .icon svg {
+          width: 40px; height: 40px; max-width: 100%; max-height: 100%;
+          object-fit: contain; display: block;
+        }
+        .split-right {
+          flex: 1 1 0; min-width: 0;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center; overflow: hidden;
+        }
+        .split-num {
+          font-size: ${isToday ? '1.35rem' : '1.85rem'};
+          font-weight: 700; line-height: 1;
+          color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
+          font-variant-numeric: tabular-nums;
+        }
+        .split-unit {
+          font-size: 0.78rem; color: var(--tw-text-muted); font-weight: 500;
+          line-height: 1.15; margin-top: 2px;
+        }
+        .split-bottom {
+          flex: 0 0 auto; text-align: center;
+          font-size: 0.84rem; font-weight: 600; color: var(--tw-text); line-height: 1.25;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          border-top: 1px solid var(--tw-border); padding-top: 4px;
+        }
       </style>
-      <div class="wrap">
-        ${needsSetup
-          ? '<div class="setup"><strong>Needs setup</strong><br>Set a label and date in tile settings.</div>'
-          : `${iconHtml}<div class="big">${headline}</div><div class="sub">${sub}</div>`}
-      </div>
+      ${bodyHtml}
     `;
   }
 }

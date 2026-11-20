@@ -50,7 +50,17 @@
               { "value": "6", "label": "Saturday" }
             ]
           },
-          { "key": "icon", "label": "Icon", "type": "icon", "defaultValue": "clock-outline" }
+          { "key": "icon", "label": "Icon", "type": "icon", "defaultValue": "clock-outline" },
+          {
+            "key": "layout",
+            "label": "Layout",
+            "type": "select",
+            "defaultValue": "stacked",
+            "options": [
+              { "value": "stacked", "label": "Stacked (default)" },
+              { "value": "split", "label": "Split (Icon + Counter)" }
+            ]
+          }
         ]
       }
     ]
