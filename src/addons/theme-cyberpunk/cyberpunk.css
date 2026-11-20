@@ -1,0 +1,22 @@
+/* Cyberpunk Neon theme (contributed by theme-cyberpunk addon) */
+[data-theme="cyberpunk"] {
+  --tw-bg: #07040e;
+  --tw-surface-rgb: 19, 11, 34;
+  --tw-surface-solid: #130b22;
+  --tw-surface-elevated: #1c1033;
+  --tw-text: #e6fff4;
+  --tw-text-muted: #5ce6b8;
+  --tw-accent: #ff2a85;
+  --tw-accent-contrast: #07040e;
+  --tw-border: rgba(255, 42, 133, 0.45);
+
+  --tw-state-normal: #00ff9f;
+  --tw-state-warning: #ffe600;
+  --tw-state-critical: #ff2a85;
+
+  --tw-tile-radius: 12px;
+  --tw-tile-shadow: 0 0 18px rgba(255, 42, 133, 0.22), 0 0 8px rgba(0, 255, 159, 0.12);
+
+  --tw-chrome-bg: rgba(13, 7, 24, 0.94);
+  --tw-modal-backdrop: rgba(4, 2, 10, 0.78);
+}

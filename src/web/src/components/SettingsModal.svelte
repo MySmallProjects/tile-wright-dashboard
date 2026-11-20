@@ -229,6 +229,24 @@
   let hasVersionMismatch = $derived(
     Boolean(serverVersionInfo && serverVersionInfo.version !== frontendVersion)
   );
+
+  let availableThemes = $derived.by(() => {
+    const list: { id: string; name: string }[] = [
+      { id: 'light', name: 'Light' },
+      { id: 'dark', name: 'Dark' }
+    ];
+    const seen = new Set(['light', 'dark']);
+    for (const addon of addonOverview.addons ?? []) {
+      if (addon.state !== 'enabled') continue;
+      for (const t of addon.contributes.themes ?? []) {
+        if (!seen.has(t.id)) {
+          seen.add(t.id);
+          list.push({ id: t.id, name: t.name });
+        }
+      }
+    }
+    return list;
+  });
 </script>
 
 <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Settings">
@@ -267,8 +285,9 @@
           <div class="row">
             <label for="userTheme">Theme</label>
             <select id="userTheme" bind:value={draftUser.theme}>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              {#each availableThemes as t (t.id)}
+                <option value={t.id}>{t.name}</option>
+              {/each}
               <option value="system">Follow device setting</option>
             </select>
           </div>
@@ -395,8 +414,9 @@
           <div class="row">
             <label for="siteTheme">Default theme</label>
             <select id="siteTheme" bind:value={draftSite.defaultTheme}>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              {#each availableThemes as t (t.id)}
+                <option value={t.id}>{t.name}</option>
+              {/each}
             </select>
           </div>
           <div class="row">

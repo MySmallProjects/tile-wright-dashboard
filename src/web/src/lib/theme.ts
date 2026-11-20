@@ -1,18 +1,17 @@
 import type { BackgroundSettings, SiteSettings, UserSettings } from '../types';
 
-export function resolveThemeName(themePref: string | null | undefined): 'light' | 'dark' {
-  if (themePref === 'dark') return 'dark';
-  if (themePref === 'light') return 'light';
+export function resolveThemeName(themePref: string | null | undefined): string {
+  if (!themePref) return 'light';
   if (themePref === 'system' && typeof window !== 'undefined' && window.matchMedia) {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
-  return 'light';
+  return themePref;
 }
 
 export function applyThemeAndSurface(
   themePref: string,
   userSettings?: UserSettings | null
-): 'light' | 'dark' {
+): string {
   const resolved = resolveThemeName(themePref);
   document.documentElement.setAttribute('data-theme', resolved);
 
