@@ -38,6 +38,8 @@
     dim: 25
   });
   let uploading = $state(false);
+  let importTarget = $state<DashboardSummary | null>(null);
+  let importFileInput = $state<HTMLInputElement | null>(null);
 
   const clone = <T>(val: T): T => structuredClone($state.snapshot(val)) as T;
 
@@ -182,6 +184,54 @@
       busy = false;
     }
   }
+
+  function downloadDashboard(d: DashboardSummary) {
+    const a = document.createElement('a');
+    a.href = api.exportDashboardUrl(d.id);
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    onNotify(`Downloading "${d.name}" JSON...`);
+  }
+
+  function startImport(d: DashboardSummary) {
+    const ok = window.confirm(
+      `Replace "${d.name}" with a dashboard JSON file?\n\n` +
+        `This will clear all existing tiles and overwrite the dashboard's name, icon, background, and settings.`
+    );
+    if (!ok) return;
+    importTarget = d;
+    importFileInput?.click();
+  }
+
+  async function handleImportFile(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    const target = importTarget;
+    importTarget = null;
+    input.value = '';
+    if (!file || !target) return;
+
+    busy = true;
+    error = '';
+    try {
+      const res = await api.importDashboard(target.id, file);
+      const updated = await api.listDashboards();
+      onChanged(updated, target.id === activeId ? target.id : undefined);
+      if (res.missingTileTypes.length > 0) {
+        onNotify(
+          `Imported "${res.dashboard.name}" (${res.tileCount} tile(s)), but missing addon tile type(s): ${res.missingTileTypes.join(', ')}.`
+        );
+      } else {
+        onNotify(`Imported "${res.dashboard.name}" (${res.tileCount} tile(s)).`);
+      }
+    } catch (err) {
+      error = err instanceof ApiError ? err.message : 'Failed to import dashboard.';
+    } finally {
+      busy = false;
+    }
+  }
 </script>
 
 <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Manage Dashboards">
@@ -197,6 +247,14 @@
       {#if error}
         <div class="error-text">{error}</div>
       {/if}
+
+      <input
+        bind:this={importFileInput}
+        type="file"
+        accept=".json,application/json"
+        style="display: none;"
+        onchange={handleImportFile}
+      />
 
       <form class="create-box" onsubmit={handleCreate}>
         <h3>Create Dashboard</h3>
@@ -300,6 +358,12 @@
                   </button>
                   <button type="button" class="icon-btn" title="Duplicate" aria-label="Duplicate dashboard" disabled={busy} onclick={() => duplicate(d)}>
                     <Icon name="content-copy" size={18} />
+                  </button>
+                  <button type="button" class="icon-btn" title="Download dashboard JSON" aria-label="Download dashboard JSON" disabled={busy} onclick={() => downloadDashboard(d)}>
+                    <Icon name="download" size={18} />
+                  </button>
+                  <button type="button" class="icon-btn" title="Upload dashboard JSON (replaces this dashboard)" aria-label="Upload dashboard JSON" disabled={busy} onclick={() => startImport(d)}>
+                    <Icon name="upload" size={18} />
                   </button>
                   <button type="button" class="icon-btn danger" title="Delete" aria-label="Delete dashboard" disabled={busy || dashboards.length <= 1 || (isEnabled && enabledCount <= 1)} onclick={() => remove(d)}>
                     <Icon name="delete" size={18} />

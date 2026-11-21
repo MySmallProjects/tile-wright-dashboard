@@ -39,3 +39,13 @@ public sealed record DashboardDetailDto(
     List<TileLayoutItem> Tiles,
     Dictionary<string, JsonElement> TileSettings,
     Dictionary<string, JsonElement> TileData);
+
+public sealed record DashboardExportFile(
+    int Version,
+    DateTimeOffset ExportedAt,
+    string Name,
+    string? Icon,
+    BackgroundSettings? BackgroundOverride,
+    List<TileLayoutItem> Tiles,
+    Dictionary<string, JsonElement> TileSettings,
+    Dictionary<string, JsonElement> TileData);

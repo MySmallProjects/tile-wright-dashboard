@@ -10,6 +10,7 @@
     VersionInfo
   } from '../types';
   import AddonManagerTab from './AddonManagerTab.svelte';
+  import BackupTab from './BackupTab.svelte';
   import Icon from './Icon.svelte';
 
   let {
@@ -40,7 +41,7 @@
     onNotify: (msg: string) => void;
   } = $props();
 
-  type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'about';
+  type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'backup' | 'about';
   let activeTab = $state<TabId>('appearance');
 
   // Local editable copies (snapshot Svelte 5 $state proxies before cloning)
@@ -272,6 +273,9 @@
         <button type="button" class:active={activeTab === 'addons'} onclick={() => (activeTab = 'addons')}>
           Addons {#if addonOverview.restartRequired}●{/if}
         </button>
+        <button type="button" class:active={activeTab === 'backup'} onclick={() => (activeTab = 'backup')}>
+          Backup
+        </button>
       {/if}
       <button type="button" class:active={activeTab === 'about'} onclick={() => (activeTab = 'about')}>
         Version
@@ -496,6 +500,9 @@
           onRefresh={onRefreshAddons}
           {onNotify}
         />
+
+      {:else if activeTab === 'backup' && currentUser.role === 'admin'}
+        <BackupTab {onNotify} />
 
       {:else if activeTab === 'about'}
         <section class="section">

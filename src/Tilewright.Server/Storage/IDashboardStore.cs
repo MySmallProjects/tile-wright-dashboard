@@ -24,4 +24,14 @@ public interface IDashboardStore
     Task SaveTileSettingsAsync(string userId, string dashboardId, string tileId, JsonElement settings, CancellationToken ct = default);
     Task<JsonElement?> GetTileDataAsync(string userId, string dashboardId, string tileId, CancellationToken ct = default);
     Task SaveTileDataAsync(string userId, string dashboardId, string tileId, JsonElement data, CancellationToken ct = default);
+    Task<DashboardSummary?> ReplaceDashboardAsync(
+        string userId,
+        string dashboardId,
+        string name,
+        string? icon,
+        BackgroundSettings? backgroundOverride,
+        List<TileLayoutItem> tiles,
+        Dictionary<string, JsonElement> tileSettings,
+        Dictionary<string, JsonElement> tileData,
+        CancellationToken ct = default);
 }

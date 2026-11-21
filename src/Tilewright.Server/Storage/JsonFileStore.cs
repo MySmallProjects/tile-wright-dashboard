@@ -133,6 +133,8 @@ public sealed class JsonFileStore
         }
     }
 
+    public void ClearCache() => _jsonCache.Clear();
+
     private async Task<T> ReadUnlockedAsync<T>(string fullPath, Func<T> defaultFactory, CancellationToken ct)
     {
         if (_jsonCache.TryGetValue(fullPath, out var cachedJson))

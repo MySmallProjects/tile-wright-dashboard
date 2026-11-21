@@ -211,4 +211,52 @@ public sealed class JsonDashboardStore(JsonFileStore files, StoragePaths paths) 
 
     public Task SaveTileDataAsync(string userId, string dashboardId, string tileId, JsonElement data, CancellationToken ct = default) =>
         files.WriteAsync(paths.TileDataFile(userId, dashboardId, tileId), data, ct);
+
+    public async Task<DashboardSummary?> ReplaceDashboardAsync(
+        string userId,
+        string dashboardId,
+        string name,
+        string? icon,
+        BackgroundSettings? backgroundOverride,
+        List<TileLayoutItem> tiles,
+        Dictionary<string, JsonElement> tileSettings,
+        Dictionary<string, JsonElement> tileData,
+        CancellationToken ct = default)
+    {
+        SafeId.Validate(dashboardId, nameof(dashboardId));
+        foreach (var tile in tiles)
+        {
+            SafeId.Validate(tile.Id, nameof(tile.Id));
+        }
+
+        var updated = await UpdateMetadataAsync(userId, dashboardId, name, icon, backgroundOverride, enabled: null, ct: ct);
+        if (updated is null) return null;
+
+        var tilesDir = paths.DashboardTilesDir(userId, dashboardId);
+        var dataDir = paths.DashboardDataDir(userId, dashboardId);
+        files.InvalidatePrefix(tilesDir);
+        files.InvalidatePrefix(dataDir);
+
+        if (Directory.Exists(tilesDir)) Directory.Delete(tilesDir, recursive: true);
+        if (Directory.Exists(dataDir)) Directory.Delete(dataDir, recursive: true);
+        Directory.CreateDirectory(tilesDir);
+        Directory.CreateDirectory(dataDir);
+
+        await files.WriteAsync(
+            paths.DashboardLayoutFile(userId, dashboardId),
+            new DashboardLayoutFile { Tiles = tiles },
+            ct);
+
+        foreach (var (tileId, settings) in tileSettings)
+        {
+            await SaveTileSettingsAsync(userId, dashboardId, tileId, settings, ct);
+        }
+
+        foreach (var (tileId, data) in tileData)
+        {
+            await SaveTileDataAsync(userId, dashboardId, tileId, data, ct);
+        }
+
+        return updated;
+    }
 }

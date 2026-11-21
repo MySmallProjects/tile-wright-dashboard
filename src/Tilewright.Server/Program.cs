@@ -114,6 +114,7 @@ app.MapSiteEndpoints();
 app.MapDashboardEndpoints();
 app.MapBackgroundEndpoints();
 app.MapAddonEndpoints();
+app.MapBackupEndpoints();
 
 // SignalR live push hub
 app.MapHub<DashboardHub>("/hubs/dashboard");

@@ -10,4 +10,5 @@ public interface ISessionStore
     Task<SessionRecord?> ValidateAsync(string rawToken, CancellationToken ct = default);
     Task DeleteByTokenAsync(string rawToken, CancellationToken ct = default);
     Task RevokeAllForUserAsync(string userId, CancellationToken ct = default);
+    Task RevokeAllAsync(CancellationToken ct = default);
 }

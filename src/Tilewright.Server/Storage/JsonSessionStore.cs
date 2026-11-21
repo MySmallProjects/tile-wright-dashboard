@@ -90,6 +90,9 @@ public sealed class JsonSessionStore(JsonFileStore files, StoragePaths paths) : 
         }, ct);
     }
 
+    public Task RevokeAllAsync(CancellationToken ct = default) =>
+        files.WriteAsync(paths.SessionsFile, new SessionsFile(), ct);
+
     public static string HashToken(string rawToken)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));

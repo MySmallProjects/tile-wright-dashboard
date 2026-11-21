@@ -139,6 +139,19 @@ export const api = {
     }),
   deleteDashboard: (id: string) =>
     request<void>(`/api/dashboards/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  exportDashboardUrl: (id: string) => `/api/dashboards/${encodeURIComponent(id)}/export`,
+  importDashboard: async (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{
+      dashboard: DashboardSummary;
+      tileCount: number;
+      missingTileTypes: string[];
+    }>(`/api/dashboards/${encodeURIComponent(id)}/import`, {
+      method: 'POST',
+      body: form
+    });
+  },
   saveLayout: (id: string, tiles: TileLayoutItem[]) =>
     request<TileLayoutItem[]>(`/api/dashboards/${encodeURIComponent(id)}/layout`, {
       method: 'PUT',
@@ -224,5 +237,32 @@ export const api = {
     request<{ accepted: boolean; result?: unknown }>(
       `/api/addons/${encodeURIComponent(addonId)}/actions/${encodeURIComponent(action)}`,
       { method: 'POST', body: JSON.stringify(payload ?? null) }
-    )
+    ),
+
+  // Admin Backup & Restore
+  restoreSiteBackup: async (file: File, clearFirst: boolean) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ restored: boolean; restartRequired: boolean; message: string }>(
+      `/api/backup/restore?clearFirst=${clearFirst ? 'true' : 'false'}`,
+      { method: 'POST', body: form }
+    );
+  },
+  clearAllDashboards: () =>
+    request<{ cleared: boolean; usersReset: number; message: string }>(
+      '/api/backup/clear-dashboards',
+      { method: 'POST' }
+    ),
+  importUsersFile: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ imported: number; signedOut: boolean; message: string }>(
+      '/api/backup/users',
+      { method: 'POST', body: form }
+    );
+  },
+  resetSite: () =>
+    request<{ reset: boolean; message: string }>('/api/backup/reset-site', {
+      method: 'POST'
+    })
 };
