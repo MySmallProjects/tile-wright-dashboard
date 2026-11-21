@@ -5,22 +5,25 @@ set -euo pipefail
 # Safe to re-run. Does not assume git history for versioning.
 
 AUTO_YES=false
+GIT_INSECURE_SSL="${TILEWRIGHT_GIT_INSECURE:-false}"
+REPO_URL="${TILEWRIGHT_REPO_URL:-}"
+
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) AUTO_YES=true ;;
+    --insecure-ssl) GIT_INSECURE_SSL=true ;;
     *)
       echo "Unknown option: $arg"
-      echo "Usage: $0 [--yes]"
+      echo "Usage: $0 [--yes] [--insecure-ssl]"
       exit 1
       ;;
   esac
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOCAL_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "=== Tilewright Development Setup ==="
-echo "Repository: $REPO_ROOT"
 echo ""
 
 if [[ ! -f /etc/os-release ]]; then
@@ -47,9 +50,10 @@ echo "Detected OS: ${PRETTY_NAME:-$ID}"
 echo ""
 echo "Planned steps:"
 echo "  1. Check/install .NET 10 SDK (needed to build and run Tilewright.Server)"
-echo "  2. Check/install Node.js & npm (needed to build the Svelte frontend into wwwroot)"
-echo "  3. Restore NuGet packages and install frontend npm packages"
-echo "  4. Build frontend (src/web -> wwwroot) and run backend xUnit tests"
+echo "  2. Check/install Node.js, npm, and git if missing"
+echo "  3. Locate, clone, or update source code (with optional SSL bypass for local git)"
+echo "  4. Restore NuGet packages and install frontend npm packages"
+echo "  5. Build frontend (src/web -> wwwroot) and run backend xUnit tests"
 echo ""
 
 if [[ "$AUTO_YES" != "true" ]]; then
@@ -96,7 +100,7 @@ else
   fi
 fi
 
-# 2. Check / install Node.js & npm (required to build Svelte frontend)
+# 2. Check / install Node.js, npm, and git
 if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
   echo "[OK] Node.js ($(node -v)) and npm ($(npm -v)) are already installed."
 else
@@ -105,7 +109,69 @@ else
   $SUDO apt-get install -y nodejs npm
 fi
 
-# 3. Restore & install dependencies
+if command -v git >/dev/null 2>&1; then
+  echo "[OK] git ($(git --version)) is already installed."
+else
+  echo "[Installing] git..."
+  $SUDO apt-get update
+  $SUDO apt-get install -y git
+fi
+
+# 3. Locate, clone, or pull source code
+GIT_SSL_ARGS=()
+if [[ "$GIT_INSECURE_SSL" == "true" ]]; then
+  GIT_SSL_ARGS=(-c http.sslVerify=false)
+fi
+
+if [[ -f "$LOCAL_REPO/src/Tilewright.sln" ]]; then
+  REPO_ROOT="$LOCAL_REPO"
+  if [[ -d "$REPO_ROOT/.git" ]]; then
+    echo "[Updating] Resetting local build-number.txt bump and pulling latest changes..."
+    git -C "$REPO_ROOT" checkout -- src/build-number.txt 2>/dev/null || true
+    git "${GIT_SSL_ARGS[@]}" -C "$REPO_ROOT" pull --ff-only || echo "[Warn] git pull skipped or failed; building local checkout."
+  else
+    echo "[OK] Using local source folder (no .git required): $REPO_ROOT"
+  fi
+elif [[ -f "$PWD/src/Tilewright.sln" ]]; then
+  REPO_ROOT="$PWD"
+  if [[ -d "$REPO_ROOT/.git" ]]; then
+    echo "[Updating] Resetting local build-number.txt bump and pulling latest changes..."
+    git -C "$REPO_ROOT" checkout -- src/build-number.txt 2>/dev/null || true
+    git "${GIT_SSL_ARGS[@]}" -C "$REPO_ROOT" pull --ff-only || echo "[Warn] git pull skipped or failed; building local checkout."
+  else
+    echo "[OK] Using local source folder (no .git required): $REPO_ROOT"
+  fi
+else
+  TARGET_DIR="$PWD/TileWright"
+  if [[ -d "$TARGET_DIR/.git" && -f "$TARGET_DIR/src/Tilewright.sln" ]]; then
+    echo "[Updating] Pulling latest code in $TARGET_DIR..."
+    git -C "$TARGET_DIR" checkout -- src/build-number.txt 2>/dev/null || true
+    git "${GIT_SSL_ARGS[@]}" -C "$TARGET_DIR" pull --ff-only
+  else
+    if [[ -z "$REPO_URL" ]]; then
+      read -r -p "Enter git repository URL to clone Tilewright: " REPO_URL
+    fi
+    if [[ -z "$REPO_URL" ]]; then
+      echo "Error: No source directory or repository URL provided."
+      exit 1
+    fi
+    if [[ "$GIT_INSECURE_SSL" != "true" && "$AUTO_YES" != "true" && "$REPO_URL" == https://* ]]; then
+      read -r -p "Skip SSL verification when cloning (for self-signed/local Gitea)? [y/N] " ssl_reply
+      if [[ "$ssl_reply" =~ ^[Yy]$ ]]; then
+        GIT_INSECURE_SSL=true
+        GIT_SSL_ARGS=(-c http.sslVerify=false)
+      fi
+    fi
+    echo "[Cloning] $REPO_URL -> $TARGET_DIR..."
+    git "${GIT_SSL_ARGS[@]}" clone "$REPO_URL" "$TARGET_DIR"
+    if [[ "$GIT_INSECURE_SSL" == "true" ]]; then
+      git -C "$TARGET_DIR" config http.sslVerify false
+    fi
+  fi
+  REPO_ROOT="$TARGET_DIR"
+fi
+
+# 4. Restore & install dependencies
 echo ""
 echo "[Restoring] NuGet packages..."
 dotnet restore "$REPO_ROOT/src/Tilewright.sln"
