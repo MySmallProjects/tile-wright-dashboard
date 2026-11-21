@@ -1,7 +1,5 @@
 using System.Security.Claims;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using Tilewright.Server.Storage;
 
 namespace Tilewright.Server.Endpoints;
@@ -111,28 +109,58 @@ public static class BackgroundEndpoints
         try
         {
             await using var stream = file.OpenReadStream();
-            using var image = await Image.LoadAsync(stream, ct);
-
-            image.Mutate(x =>
+            using var codec = SKCodec.Create(stream);
+            if (codec is null)
             {
-                x.AutoOrient();
-                if (image.Width > MaxDimension || image.Height > MaxDimension)
-                {
-                    x.Resize(new ResizeOptions
-                    {
-                        Mode = ResizeMode.Max,
-                        Size = new Size(MaxDimension, MaxDimension)
-                    });
-                }
-            });
+                return (Results.BadRequest(new { error = "Uploaded file is not a valid image." }), null);
+            }
 
-            await image.SaveAsWebpAsync(tempPath, new WebpEncoder { Quality = 84 }, ct);
+            using var decoded = SKBitmap.Decode(codec);
+            if (decoded is null)
+            {
+                return (Results.BadRequest(new { error = "Uploaded file is not a valid image." }), null);
+            }
+
+            using var oriented = codec.EncodedOrigin == SKEncodedOrigin.TopLeft
+                ? null
+                : ApplyExifOrientation(decoded, codec.EncodedOrigin);
+            var sourceBitmap = oriented ?? decoded;
+            SKBitmap outputBitmap = sourceBitmap;
+            SKBitmap? resized = null;
+            try
+            {
+                if (sourceBitmap.Width > MaxDimension || sourceBitmap.Height > MaxDimension)
+                {
+                    var scale = Math.Min((double)MaxDimension / sourceBitmap.Width, (double)MaxDimension / sourceBitmap.Height);
+                    var targetW = Math.Max(1, (int)Math.Round(sourceBitmap.Width * scale));
+                    var targetH = Math.Max(1, (int)Math.Round(sourceBitmap.Height * scale));
+                    var targetInfo = new SKImageInfo(targetW, targetH, sourceBitmap.ColorType, sourceBitmap.AlphaType);
+                    resized = sourceBitmap.Resize(targetInfo, new SKSamplingOptions(SKCubicResampler.Mitchell));
+                    if (resized is not null)
+                    {
+                        outputBitmap = resized;
+                    }
+                }
+
+                using var skImage = SKImage.FromBitmap(outputBitmap);
+                using var encoded = skImage.Encode(SKEncodedImageFormat.Webp, 84);
+                if (encoded is null)
+                {
+                    return (Results.BadRequest(new { error = "Failed to encode uploaded image." }), null);
+                }
+
+                await using (var outStream = File.Create(tempPath))
+                {
+                    encoded.SaveTo(outStream);
+                }
+            }
+            finally
+            {
+                resized?.Dispose();
+            }
+
             File.Move(tempPath, targetPath, overwrite: true);
             return (null, imageId);
-        }
-        catch (UnknownImageFormatException)
-        {
-            return (Results.BadRequest(new { error = "Uploaded file is not a valid image." }), null);
         }
         finally
         {
@@ -141,5 +169,53 @@ public static class BackgroundEndpoints
                 try { File.Delete(tempPath); } catch { /* ignore */ }
             }
         }
+    }
+
+    private static SKBitmap ApplyExifOrientation(SKBitmap bitmap, SKEncodedOrigin origin)
+    {
+        var swapAxes = origin is SKEncodedOrigin.LeftTop
+            or SKEncodedOrigin.RightTop
+            or SKEncodedOrigin.RightBottom
+            or SKEncodedOrigin.LeftBottom;
+
+        var width = swapAxes ? bitmap.Height : bitmap.Width;
+        var height = swapAxes ? bitmap.Width : bitmap.Height;
+        var result = new SKBitmap(width, height, bitmap.ColorType, bitmap.AlphaType);
+
+        using var canvas = new SKCanvas(result);
+        switch (origin)
+        {
+            case SKEncodedOrigin.TopRight:
+                canvas.Scale(-1, 1, width / 2f, height / 2f);
+                break;
+            case SKEncodedOrigin.BottomRight:
+                canvas.RotateDegrees(180, width / 2f, height / 2f);
+                break;
+            case SKEncodedOrigin.BottomLeft:
+                canvas.Scale(1, -1, width / 2f, height / 2f);
+                break;
+            case SKEncodedOrigin.LeftTop:
+                canvas.Translate(width, 0);
+                canvas.RotateDegrees(90);
+                canvas.Scale(1, -1, bitmap.Width / 2f, bitmap.Height / 2f);
+                break;
+            case SKEncodedOrigin.RightTop:
+                canvas.Translate(width, 0);
+                canvas.RotateDegrees(90);
+                break;
+            case SKEncodedOrigin.RightBottom:
+                canvas.Translate(0, height);
+                canvas.RotateDegrees(270);
+                canvas.Scale(1, -1, bitmap.Width / 2f, bitmap.Height / 2f);
+                break;
+            case SKEncodedOrigin.LeftBottom:
+                canvas.Translate(0, height);
+                canvas.RotateDegrees(270);
+                break;
+        }
+
+        using var image = SKImage.FromBitmap(bitmap);
+        canvas.DrawImage(image, 0, 0, SKSamplingOptions.Default);
+        return result;
     }
 }
