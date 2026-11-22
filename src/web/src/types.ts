@@ -116,6 +116,12 @@ export interface SettingsFieldSchema {
   options?: SelectOptionSpec[] | null;
   dynamicOptionsEndpoint?: string | null;
   fields?: SettingsFieldSchema[] | null;
+  visibleWhen?: FieldVisibilityCondition | null;
+}
+
+export interface FieldVisibilityCondition {
+  key: string;
+  equals?: unknown;
 }
 
 export interface TileElementSpec {

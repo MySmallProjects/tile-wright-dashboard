@@ -191,6 +191,105 @@
             "defaultValue": false
           }
         ]
+      },
+      {
+        "id": "control-split",
+        "name": "HA Control (split)",
+        "description": "Split-row Home Assistant control with a device icon, On/Off toggle status icon, and optional bottom label.",
+        "icon": "home",
+        "element": { "tagName": "tw-addon-ha-control-split", "script": "ha-control-split-tile.js" },
+        "defaultSize": { "w": 4, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 6 },
+        "settingsSchema": [
+          {
+            "key": "entityId",
+            "label": "Entity (from Home Assistant)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "entities"
+          },
+          {
+            "key": "manualEntityId",
+            "label": "Or enter Entity ID manually",
+            "type": "text",
+            "helpText": "e.g. switch.washing_machine or light.kitchen"
+          },
+          {
+            "key": "service",
+            "label": "Action service",
+            "type": "select",
+            "defaultValue": "toggle",
+            "options": [
+              { "value": "toggle", "label": "Toggle" },
+              { "value": "turn_on", "label": "Turn On" },
+              { "value": "turn_off", "label": "Turn Off" },
+              { "value": "press", "label": "Press (Button)" }
+            ]
+          },
+          {
+            "key": "deviceIcon",
+            "label": "Device icon (optional, defaults to HA entity icon)",
+            "type": "icon"
+          },
+          {
+            "key": "deviceIconPosition",
+            "label": "Device icon position",
+            "type": "select",
+            "defaultValue": "left",
+            "options": [
+              { "value": "left", "label": "Left (toggle on right)" },
+              { "value": "right", "label": "Right (toggle on left)" }
+            ]
+          },
+          {
+            "key": "iconOn",
+            "label": "On icon",
+            "type": "icon",
+            "defaultValue": "lightning-bolt"
+          },
+          {
+            "key": "iconOff",
+            "label": "Off icon",
+            "type": "icon",
+            "defaultValue": "power"
+          },
+          {
+            "key": "pressIcon",
+            "label": "Press button icon (when Action = Press)",
+            "type": "icon",
+            "defaultValue": "home"
+          },
+          {
+            "key": "statusIconSize",
+            "label": "Toggle status icon size",
+            "type": "select",
+            "defaultValue": "small",
+            "options": [
+              { "value": "small", "label": "Small (32x32)" },
+              { "value": "medium", "label": "Medium (48x48)" },
+              { "value": "large", "label": "Large (64x64)" }
+            ]
+          },
+          {
+            "key": "hideLabel",
+            "label": "Hide label",
+            "type": "toggle",
+            "defaultValue": true
+          },
+          {
+            "key": "label",
+            "label": "Label override (optional)",
+            "type": "text",
+            "helpText": "Leave blank to use the Home Assistant entity's friendly name.",
+            "visibleWhen": { "key": "hideLabel", "equals": false }
+          },
+          {
+            "key": "showLastUpdated",
+            "label": "Show last updated time",
+            "type": "toggle",
+            "defaultValue": false
+          }
+        ]
       }
     ]
   }

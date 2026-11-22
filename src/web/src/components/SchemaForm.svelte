@@ -87,9 +87,16 @@
     values[fieldKey] = list;
   }
 
+  function isFieldVisible(field: SettingsFieldSchema): boolean {
+    const cond = field.visibleWhen;
+    if (!cond || !cond.key) return true;
+    return values[cond.key] === cond.equals;
+  }
+
   function validate(): boolean {
     const nextErrors: Record<string, string> = {};
     for (const f of schema) {
+      if (!isFieldVisible(f)) continue;
       if (f.type === 'secret') {
         const hasExisting = Boolean(secretsSet[f.key]) && !clearedSecrets[f.key];
         const hasNew = Boolean(secretDrafts[f.key]);
@@ -153,6 +160,7 @@
 
 <form class="schema-form" onsubmit={handleSubmit}>
   {#each schema as field (field.key)}
+    {#if isFieldVisible(field)}
     <div class="field">
       <div class="field-head">
         <label for={`sf-${field.key}`}>
@@ -278,6 +286,7 @@
         <div class="error-text">{errors[field.key]}</div>
       {/if}
     </div>
+    {/if}
   {/each}
 
   <div class="form-actions">

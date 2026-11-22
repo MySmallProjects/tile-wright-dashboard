@@ -115,6 +115,13 @@ public sealed class SelectOptionSpec
     public string Label { get; set; } = string.Empty;
 }
 
+public sealed class FieldVisibilityCondition
+{
+    public string Key { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("equals")]
+    public JsonElement? EqualsValue { get; set; }
+}
+
 public sealed class SettingsFieldSchema
 {
     public string Key { get; set; } = string.Empty;
@@ -131,6 +138,7 @@ public sealed class SettingsFieldSchema
     public string? DynamicOptionsEndpoint { get; set; }
     /// <summary>Sub-fields when Type == "group" (repeating group of objects)</summary>
     public List<SettingsFieldSchema>? Fields { get; set; }
+    public FieldVisibilityCondition? VisibleWhen { get; set; }
 }
 
 public static class SemVerHelper
