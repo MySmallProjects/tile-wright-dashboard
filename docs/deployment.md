@@ -2,7 +2,7 @@
 
 ## 1. Folder Locations
 
-When installed with `scripts/install.sh` on Ubuntu/Debian:
+When installed with `scripts/install-latest-release.sh` (or `install.sh` inside a release zip) on Ubuntu/Debian:
 
 | Purpose | Path |
 | --- | --- |
@@ -12,7 +12,7 @@ When installed with `scripts/install.sh` on Ubuntu/Debian:
 | Systemd unit | `/etc/systemd/system/tilewright.service` |
 | Service user | `tilewright` |
 
-Because `/var/lib/tilewright` lives outside `/opt/tilewright`, re-running `scripts/install.sh` upgrades the application in place without touching dashboards, sessions, secrets, or installed addons.
+Because `/var/lib/tilewright` lives outside `/opt/tilewright`, re-running `scripts/install-latest-release.sh` (or `install.sh` from a newer release zip) upgrades the application in place without touching dashboards, sessions, secrets, or installed addons.
 
 ---
 
@@ -32,7 +32,7 @@ Group=tilewright
 WorkingDirectory=/opt/tilewright
 EnvironmentFile=-/etc/tilewright/tilewright.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://0.0.0.0:5050
+Environment=ASPNETCORE_URLS=http://0.0.0.0:8080
 Environment=Tilewright__DataRoot=/var/lib/tilewright
 ExecStart=/opt/tilewright/Tilewright.Server
 Restart=always
@@ -53,7 +53,7 @@ sudo journalctl -u tilewright -f
 
 ## 3. Reverse Proxy (nginx)
 
-Kestrel listens on `0.0.0.0:5050` (reachable directly on your LAN over HTTP). You can also place nginx in front of it for HTTPS or custom hostnames.
+Kestrel listens on `0.0.0.0:8080` (reachable directly on your LAN over HTTP). You can also place nginx in front of it for HTTPS or custom hostnames.
 
 > **Important:**
 > - Include `X-Forwarded-Proto`, `X-Forwarded-For`, and `Host` so Tilewright automatically detects HTTPS and sets `__Host-tw_session` with `Secure` and HSTS (and omits them on plain HTTP).
@@ -73,7 +73,7 @@ server {
     client_max_body_size 30m;
 
     location / {
-        proxy_pass http://127.0.0.1:5050;
+        proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
 
         proxy_set_header Host $host;

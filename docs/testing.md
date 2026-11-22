@@ -84,10 +84,10 @@ Then start the server in Development mode:
 ```bash
 dotnet run --project src/Tilewright.Server
 ```
-Server listens on `http://localhost:5050` with Swagger UI at `http://localhost:5050/swagger`.
+Server listens on `http://localhost:8080` with Swagger UI at `http://localhost:8080/swagger`.
 
 ### 2.1 Versioning (Git-Independent)
-- [ ] **Check `/api/version`:** Open `http://localhost:5050/api/version` (or via Swagger).
+- [ ] **Check `/api/version`:** Open `http://localhost:8080/api/version` (or via Swagger).
   - *Expected:* Returns JSON with `version` (`0.1.0+<build>`), `buildNumber`, `buildDate`, `configuration`, and `machineName` (and `gitCommit`/`gitDirty` only if git is present).
 - [ ] **Two consecutive builds:** Run `dotnet build src/Tilewright.Server/Tilewright.Server.csproj` twice and inspect `src/build-number.txt`.
   - *Expected:* The build number increases by 1 on each build.
@@ -109,7 +109,7 @@ Server listens on `http://localhost:5050` with Swagger UI at `http://localhost:5
   - *Expected:* 6th attempt returns `429 Too Many Requests` with a `Retry-After` header.
 
 ### 2.3 HTTP vs HTTPS Detection
-- [ ] **Plain HTTP cookie:** Inspect the `Set-Cookie` header from `POST /api/auth/login` over `http://localhost:5050`.
+- [ ] **Plain HTTP cookie:** Inspect the `Set-Cookie` header from `POST /api/auth/login` over `http://localhost:8080`.
   - *Expected:* Cookie is named `tw_session` with `HttpOnly; SameSite=Lax` and **no** `Secure` flag; no `Strict-Transport-Security` header.
 - [ ] **Behind nginx HTTPS (or localhost `X-Forwarded-Proto: https`):** Send a request from `localhost` with header `X-Forwarded-Proto: https`.
   - *Expected:* Cookie is named `__Host-tw_session` with `Secure`, and `Strict-Transport-Security` header is present. (Verified automatically by `HttpsDetectionTests`.)
@@ -119,7 +119,7 @@ Server listens on `http://localhost:5050` with Swagger UI at `http://localhost:5
   - *Expected:* Tile data remains intact and stored separately under `data/users/<userId>/dashboards/<dashboardId>/data/`.
 - [ ] **Corrupt JSON recovery:** Corrupt a non-critical JSON file (e.g. `data/site.json`) with invalid text and call `GET /api/site`.
   - *Expected:* Server does not crash, logs a warning, renames the corrupt file to `site.json.corrupt.<timestamp>.bak`, and returns default settings.
-- [ ] **Swagger & SignalR hub:** Open `http://localhost:5050/swagger` and confirm all endpoints are documented; authenticated SignalR clients can connect to `/hubs/dashboard` and invoke `Ping()`.
+- [ ] **Swagger & SignalR hub:** Open `http://localhost:8080/swagger` and confirm all endpoints are documented; authenticated SignalR clients can connect to `/hubs/dashboard` and invoke `Ping()`.
 
 ## Phase 3: Frontend Shell
 
@@ -128,10 +128,10 @@ Build the Svelte frontend into `wwwroot` and start the .NET server:
 npm --prefix src/web run build
 dotnet run --project src/Tilewright.Server
 ```
-Open `http://localhost:5050` in your desktop browser and on your tablet (`http://<your-pc-ip>:5050`).
+Open `http://localhost:8080` in your desktop browser and on your tablet (`http://<your-pc-ip>:8080`).
 
 ### 3.1 First-Run, Login, Sessions & Auto-Login
-- [ ] **First-run admin setup:** With an empty `src/Tilewright.Server/data` folder, open `http://localhost:5050`.
+- [ ] **First-run admin setup:** With an empty `src/Tilewright.Server/data` folder, open `http://localhost:8080`.
   - *Expected:* One-time Admin Setup screen appears. Creating the admin logs you in and opens your empty "Home" dashboard.
 - [ ] **Stay logged in across refresh and server restart:** Refresh the browser, then stop and restart `dotnet run` and refresh again.
   - *Expected:* You remain logged in without seeing the login screen.
@@ -168,7 +168,7 @@ Open `http://localhost:5050` in your desktop browser and on your tablet (`http:/
 
 ## Phase 4: Multiple Dashboards UI
 
-Rebuild the frontend (and backend if needed) and open `http://localhost:5050` on desktop and tablet:
+Rebuild the frontend (and backend if needed) and open `http://localhost:8080` on desktop and tablet:
 ```bash
 dotnet build src/Tilewright.Server/Tilewright.Server.csproj
 npm --prefix src/web run build
@@ -261,7 +261,7 @@ dotnet run --project src/Tilewright.Server --no-build
 ### 6.3 Server-Side Addons (Image, API / Stock, Home Assistant)
 - [ ] **Image / Camera:** Add an **Image / Camera** tile pointing at an HTTP image URL (or drop an image in `src/Tilewright.Server/data/addons/image/images/` and select **Random image from server folder**).
   - *Expected:* Image loads through the server (inspect Network tab — no direct browser request to the remote URL); caption and cover/contain fit work.
-- [ ] **API / Stock Value:** Add an **API / Stock Value** tile with a JSON endpoint (e.g. `http://localhost:5050/api/version`, JSON path `buildNumber`, prefix `#`, decimals `0`).
+- [ ] **API / Stock Value:** Add an **API / Stock Value** tile with a JSON endpoint (e.g. `http://localhost:8080/api/version`, JSON path `buildNumber`, prefix `#`, decimals `0`).
   - *Expected:* Server fetches JSON, extracts the path, and displays the formatted value.
 - [ ] **Home Assistant (Read & Control):** *(If you have an HA instance on your LAN)* Configure Home Assistant URL and write-only access token in **Settings → Addons → Home Assistant → Settings**. Add an **HA Sensor (Read)** tile (verify entity dropdown populates dynamically, configure colour rules e.g. `> 150 warning`, `> 300 critical`) and an **HA Control (Toggle)** tile.
   - *Expected:* Sensor displays live state and updates via HA WebSocket; Control toggles the entity through the server and reflects external changes live. Without HA configured, both tiles show a clean **"Needs setup"** placeholder.
@@ -276,24 +276,26 @@ dotnet run --project src/Tilewright.Server --no-build
   npm --prefix src/web run build
   ```
   - *Expected:* All 20+ xUnit tests pass, `svelte-check` reports 0 errors, and Vite outputs static files to `wwwroot/`.
-- [ ] **Script syntax & idempotency:** Run `bash -n scripts/dev-setup.sh && bash -n scripts/install.sh`.
-  - *Expected:* Both scripts pass syntax validation with zero errors.
+- [ ] **Script syntax & idempotency:** Run `bash -n scripts/install-dev.sh && bash -n scripts/install-latest-release.sh && bash -n scripts/release/create-release.sh && bash -n scripts/release/install.sh`.
+  - *Expected:* All scripts pass syntax validation with zero errors.
 
-### 7.2 Development Setup (`scripts/dev-setup.sh`)
-- [ ] **Run `scripts/dev-setup.sh` on Ubuntu/Debian:**
+### 7.2 Development Setup (`scripts/install-dev.sh`)
+- [ ] **Run `scripts/install-dev.sh` on Ubuntu/Debian:**
   ```bash
-  ./scripts/dev-setup.sh
+  ./scripts/install-dev.sh
   ```
   - *Expected:* Prints what it will install and asks for confirmation (`--yes` skips); skips already-installed tools; restores, builds, runs tests, and prints run/data/docs instructions. Re-running it a second time succeeds cleanly.
 
-### 7.3 Production Install & Upgrade (`scripts/install.sh`)
-- [ ] **Run `scripts/install.sh` on Ubuntu server:**
+### 7.3 Production Release Install & Upgrade (`scripts/install-latest-release.sh` & `scripts/release/install.sh`)
+- [ ] **Create release archives:** Run `./scripts/release/create-release.sh`.
+  - *Expected:* Runs tests, builds framework-dependent `linux-x64` and `linux-arm64` zips (with no `.pdb` files) + `.sha256` checksums in `releases/`.
+- [ ] **Run `scripts/install-latest-release.sh` on Ubuntu server:**
   ```bash
-  ./scripts/install.sh
+  ./scripts/install-latest-release.sh --repo <repo-url>
   ```
-  - *Expected:* Prints the 8-step numbered plan and waits for confirmation; builds from source and publishes to `/opt/tilewright`; creates `tilewright` user and `/var/lib/tilewright` + `/etc/tilewright`; enables and starts `tilewright.service`; tests `/api/version` and prints the post-install notes + nginx config.
-- [ ] **Upgrade safety (re-run `install.sh`):** Create a dashboard and a tile, then re-run `./scripts/install.sh --yes`.
-  - *Expected:* Service upgrades cleanly and all dashboards, sessions, secrets, and addons in `/var/lib/tilewright` remain intact.
+  - *Expected:* Detects architecture, downloads latest release zip, verifies SHA256, extracts, and runs `install.sh` (which prints the 8-step numbered plan, installs `.NET 10 ASP.NET Core Runtime` if missing, installs to `/opt/tilewright`, enables/starts `tilewright.service` on `http://0.0.0.0:8080`, verifies `/api/version`, and prints post-install notes + nginx config).
+- [ ] **Upgrade safety:** Create a dashboard and a tile, then re-run `./scripts/install-latest-release.sh --repo <repo-url> --yes` (or `./install.sh --yes` from an extracted release).
+  - *Expected:* Shows current vs target version, upgrades cleanly, and all dashboards, sessions, secrets, and addons in `/var/lib/tilewright` remain intact.
 
 ### 7.4 Tablet & Device Matrix Polish
 - [ ] **Device Matrix pass:** Verify View mode, Edit mode (drag, resize, pin), swipe, theme switching (Light / Dark / Cyberpunk), and backdrop blur toggle on Tablet (primary), Desktop (secondary), and Phone (extra).

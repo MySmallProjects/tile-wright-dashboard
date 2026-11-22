@@ -21,3 +21,6 @@ src/Tilewright.Server/wwwroot/
 Thumbs.db
 .vscode/
 .idea/
+
+# Release artifacts & temporary packaging files
+releases/
