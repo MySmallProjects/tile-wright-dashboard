@@ -213,6 +213,24 @@ input[type="range"] {
   outline-color: var(--tw-accent);
 }
 
+.grid-stack-item-content.tile-flash {
+  animation: tw-tile-clone-flash 1.4s ease-out;
+}
+
+@keyframes tw-tile-clone-flash {
+  0%, 35% {
+    box-shadow: 0 0 0 3px var(--tw-accent), 0 0 24px var(--tw-accent);
+    outline: 3px solid var(--tw-accent);
+  }
+  18% {
+    box-shadow: 0 0 0 5px var(--tw-accent), 0 0 32px var(--tw-accent);
+    outline: 3px solid var(--tw-accent);
+  }
+  100% {
+    box-shadow: var(--tw-tile-shadow);
+  }
+}
+
 .grid-stack-placeholder > .placeholder-content {
   background: rgba(37, 99, 235, 0.18) !important;
   border: 2px dashed var(--tw-accent) !important;

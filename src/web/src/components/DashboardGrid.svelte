@@ -56,6 +56,7 @@
   let currentBaseCols = $state(8);
   let workingTiles = $state<TileLayoutItem[]>([]);
   let editSnapshot: TileLayoutItem[] | null = null;
+  let flashTileId: string | null = null;
   let saving = $state(false);
   let resizeTimer: number | null = null;
 
@@ -310,6 +311,17 @@
       actions.appendChild(cfgBtn);
     }
 
+    const cloneBtn = document.createElement('button');
+    cloneBtn.type = 'button';
+    cloneBtn.title = 'Clone tile';
+    cloneBtn.setAttribute('aria-label', 'Clone tile');
+    cloneBtn.textContent = '⧉';
+    cloneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void cloneTile(tile.id);
+    });
+    actions.appendChild(cloneBtn);
+
     const pinBtn = document.createElement('button');
     pinBtn.type = 'button';
     pinBtn.title = tile.pinned ? 'Unpin tile' : 'Pin tile';
@@ -360,6 +372,14 @@
     content.appendChild(toolbar);
     content.appendChild(body);
     item.appendChild(content);
+
+    if (tile.id === flashTileId) {
+      flashTileId = null;
+      content.classList.add('tile-flash');
+      requestAnimationFrame(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+      window.setTimeout(() => content.classList.remove('tile-flash'), 1450);
+    }
+
     return item;
   }
 
@@ -458,6 +478,40 @@
     if (def.spec.settingsElement || (def.spec.settingsSchema && def.spec.settingsSchema.length > 0)) {
       settingsTarget = { tileId: id, def };
     }
+  }
+
+  async function cloneTile(sourceTileId: string) {
+    syncFromGridToWorking();
+    const source = workingTiles.find((t) => t.id === sourceTileId);
+    if (!source) return;
+
+    const newId = `t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const sourceSettings = dashboard.tileSettings[source.id];
+    if (sourceSettings) {
+      const clonedSettings = clone(sourceSettings);
+      dashboard.tileSettings[newId] = clonedSettings;
+      try {
+        await api.saveTileSettings(dashboard.summary.id, newId, clonedSettings);
+      } catch {
+        onNotify('Cloned tile, but failed to copy its settings.');
+      }
+    }
+
+    workingTiles = [
+      ...workingTiles,
+      {
+        id: newId,
+        type: source.type,
+        x: -1,
+        y: -1,
+        w: source.w,
+        h: source.h,
+        pinned: false,
+        order: workingTiles.length
+      }
+    ];
+    flashTileId = newId;
+    mountGrid();
   }
 
   async function handleSaveTileSettings(nextSettings: Record<string, unknown>) {
