@@ -8,8 +8,8 @@ namespace Tilewright.Addons.BuiltIn;
 
 public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
 {
-    private sealed record CachedValue(string Formatted, string Raw, DateTimeOffset ExpiresAt);
-    private readonly ConcurrentDictionary<string, CachedValue> _cache = new(StringComparer.Ordinal);
+    private sealed record CachedBody(string Body, DateTimeOffset ExpiresAt);
+    private readonly ConcurrentDictionary<string, CachedBody> _bodyCache = new(StringComparer.Ordinal);
 
     public IActionHandler ActionHandler => this;
 
@@ -21,32 +21,116 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
         IAddonHostContext host,
         CancellationToken ct = default)
     {
-        if (!string.Equals(action, "fetch-value", StringComparison.OrdinalIgnoreCase) || payload is null)
+        if (payload is null)
         {
             return new { error = "Unknown action." };
         }
 
-        var url = GetString(payload.Value, "apiUrl");
-        var jsonPath = GetString(payload.Value, "jsonPath");
+        if (string.Equals(action, "fetch-value", StringComparison.OrdinalIgnoreCase))
+        {
+            return await HandleSingleFetchAsync(payload.Value, host, ct);
+        }
+
+        if (string.Equals(action, "fetch-values", StringComparison.OrdinalIgnoreCase))
+        {
+            return await HandleMultiFetchAsync(payload.Value, host, ct);
+        }
+
+        return new { error = "Unknown action." };
+    }
+
+    private async Task<object> HandleSingleFetchAsync(JsonElement payload, IAddonHostContext host, CancellationToken ct)
+    {
+        var (uri, cacheTtl, setupErr) = ParseFetchSetup(payload);
+        if (setupErr is not null || uri is null)
+        {
+            return new { needsSetup = true, error = setupErr };
+        }
+
+        var (body, cached, fetchErr) = await FetchBodyCachedAsync(uri, cacheTtl, host, ct);
+        if (fetchErr is not null || body is null)
+        {
+            return new { error = fetchErr ?? "Fetch failed." };
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var item = ExtractAndFormatItem(doc.RootElement, payload);
+            if (item.Error is not null)
+            {
+                return new { error = item.Error };
+            }
+            return new { value = item.Value, raw = item.Raw, cached, fetchedAt = DateTimeOffset.UtcNow };
+        }
+        catch (Exception ex)
+        {
+            host.Logger.LogWarning(ex, "API value parse failed.");
+            return new { error = $"Parse failed: {ex.Message}" };
+        }
+    }
+
+    private async Task<object> HandleMultiFetchAsync(JsonElement payload, IAddonHostContext host, CancellationToken ct)
+    {
+        var (uri, cacheTtl, setupErr) = ParseFetchSetup(payload);
+        if (setupErr is not null || uri is null)
+        {
+            return new { needsSetup = true, error = setupErr };
+        }
+
+        if (!payload.TryGetProperty("items", out var itemsEl) || itemsEl.ValueKind != JsonValueKind.Array || itemsEl.GetArrayLength() == 0)
+        {
+            return new { needsSetup = true, error = "Add at least one item in tile settings." };
+        }
+
+        var (body, cached, fetchErr) = await FetchBodyCachedAsync(uri, cacheTtl, host, ct);
+        if (fetchErr is not null || body is null)
+        {
+            return new { error = fetchErr ?? "Fetch failed." };
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var results = new List<object>();
+            foreach (var itemEl in itemsEl.EnumerateArray())
+            {
+                var extracted = ExtractAndFormatItem(doc.RootElement, itemEl);
+                results.Add(new { value = extracted.Value, raw = extracted.Raw, error = extracted.Error });
+            }
+            return new { items = results, cached, fetchedAt = DateTimeOffset.UtcNow };
+        }
+        catch (Exception ex)
+        {
+            host.Logger.LogWarning(ex, "API multi-value parse failed.");
+            return new { error = $"Parse failed: {ex.Message}" };
+        }
+    }
+
+    private static (Uri? Uri, TimeSpan CacheTtl, string? SetupError) ParseFetchSetup(JsonElement payload)
+    {
+        var url = GetString(payload, "apiUrl");
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            return new { needsSetup = true, error = "Configure a valid API URL in tile settings." };
+            return (null, TimeSpan.Zero, "Configure a valid API URL in tile settings.");
         }
 
-        var refreshRaw = GetString(payload.Value, "refreshInterval") ?? "15m";
+        var refreshRaw = GetString(payload, "refreshInterval") ?? "15m";
         var cacheTtl = DurationParser.Parse(refreshRaw, TimeSpan.FromMinutes(15), TimeSpan.FromSeconds(10));
-        var prefix = GetString(payload.Value, "prefix") ?? string.Empty;
-        var suffix = GetString(payload.Value, "suffix") ?? string.Empty;
-        var numberFormat = GetString(payload.Value, "numberFormat")?.Trim();
-        int? decimals = payload.Value.TryGetProperty("decimals", out var decEl) && decEl.ValueKind == JsonValueKind.Number
-            ? decEl.GetInt32()
-            : null;
+        return (uri, cacheTtl, null);
+    }
 
-        var cacheKey = $"{url}|{jsonPath}|{prefix}|{suffix}|{numberFormat}|{decimals}";
-        if (_cache.TryGetValue(cacheKey, out var hit) && hit.ExpiresAt > DateTimeOffset.UtcNow)
+    private async Task<(string? Body, bool Cached, string? Error)> FetchBodyCachedAsync(
+        Uri uri,
+        TimeSpan cacheTtl,
+        IAddonHostContext host,
+        CancellationToken ct)
+    {
+        var cacheKey = uri.ToString();
+        if (_bodyCache.TryGetValue(cacheKey, out var hit) && hit.ExpiresAt > DateTimeOffset.UtcNow)
         {
-            return new { value = hit.Formatted, raw = hit.Raw, cached = true, fetchedAt = DateTimeOffset.UtcNow };
+            return (hit.Body, true, null);
         }
 
         try
@@ -68,38 +152,59 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
             using var resp = await client.SendAsync(req, ct);
             if (!resp.IsSuccessStatusCode)
             {
-                return new { error = $"API returned HTTP {(int)resp.StatusCode}." };
+                return (null, false, $"API returned HTTP {(int)resp.StatusCode}.");
             }
 
             var body = await resp.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(body);
-            var extracted = JsonPathExtractor.Extract(doc.RootElement, jsonPath);
-            if (extracted is null)
-            {
-                return new { error = $"JSON path '{jsonPath}' not found." };
-            }
-
-            var rawStr = extracted.Value.ValueKind switch
-            {
-                JsonValueKind.String => extracted.Value.GetString() ?? string.Empty,
-                JsonValueKind.Number => extracted.Value.GetRawText(),
-                JsonValueKind.True => "true",
-                JsonValueKind.False => "false",
-                _ => extracted.Value.GetRawText()
-            };
-
-            var display = FormatNumericValue(rawStr, numberFormat, decimals);
-
-            var formatted = $"{prefix}{display}{suffix}";
-            _cache[cacheKey] = new CachedValue(formatted, rawStr, DateTimeOffset.UtcNow.Add(cacheTtl));
-
-            return new { value = formatted, raw = rawStr, cached = false, fetchedAt = DateTimeOffset.UtcNow };
+            _bodyCache[cacheKey] = new CachedBody(body, DateTimeOffset.UtcNow.Add(cacheTtl));
+            return (body, false, null);
         }
         catch (Exception ex)
         {
             host.Logger.LogWarning(ex, "API value fetch failed.");
-            return new { error = $"Fetch failed: {ex.Message}" };
+            return (null, false, $"Fetch failed: {ex.Message}");
         }
+    }
+
+    private static (string? Value, string? Raw, string? Error) ExtractAndFormatItem(JsonElement root, JsonElement itemConfig)
+    {
+        var jsonPath = GetString(itemConfig, "jsonPath");
+        var extracted = JsonPathExtractor.Extract(root, jsonPath);
+        if (extracted is null)
+        {
+            return (null, null, $"JSON path '{jsonPath}' not found.");
+        }
+
+        var rawStr = extracted.Value.ValueKind switch
+        {
+            JsonValueKind.String => extracted.Value.GetString() ?? string.Empty,
+            JsonValueKind.Number => extracted.Value.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => extracted.Value.GetRawText()
+        };
+
+        var prefix = GetString(itemConfig, "prefix") ?? string.Empty;
+        var suffix = GetString(itemConfig, "suffix") ?? string.Empty;
+        var numberFormat = GetString(itemConfig, "numberFormat")?.Trim();
+        var decimals = GetDecimals(itemConfig);
+
+        var display = FormatNumericValue(rawStr, numberFormat, decimals);
+        return ($"{prefix}{display}{suffix}", rawStr, null);
+    }
+
+    private static int? GetDecimals(JsonElement el)
+    {
+        if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty("decimals", out var decEl))
+            return null;
+
+        if (decEl.ValueKind == JsonValueKind.Number && decEl.TryGetInt32(out var n))
+            return n;
+
+        if (decEl.ValueKind == JsonValueKind.String && int.TryParse(decEl.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+
+        return null;
     }
 
     public static string FormatNumericValue(string rawStr, string? numberFormat, int? decimals)

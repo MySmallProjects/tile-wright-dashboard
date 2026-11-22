@@ -45,6 +45,36 @@
           { "key": "logoUrl", "label": "Logo URL (optional)", "type": "url" },
           { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" }
         ]
+      },
+      {
+        "id": "api-multi-value",
+        "name": "API / Stock List",
+        "description": "Fetches a JSON API once and displays multiple extracted values as one-line rows.",
+        "icon": "format-list-bulleted",
+        "element": { "tagName": "tw-addon-api-multi-value", "script": "api-multi-value-tile.js" },
+        "defaultSize": { "w": 6, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 8 },
+        "settingsSchema": [
+          { "key": "title", "label": "Header title (optional)", "type": "text" },
+          { "key": "apiUrl", "label": "JSON API URL", "type": "url", "required": true, "helpText": "Fetched once by the server (CORS-free)." },
+          { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" },
+          { "key": "showUpdated", "label": "Show updated time", "type": "toggle", "defaultValue": true },
+          {
+            "key": "items",
+            "label": "Items",
+            "type": "group",
+            "fields": [
+              { "key": "label", "label": "Label", "type": "text" },
+              { "key": "jsonPath", "label": "JSON path", "type": "text" },
+              { "key": "prefix", "label": "Prefix", "type": "text" },
+              { "key": "suffix", "label": "Suffix", "type": "text" },
+              { "key": "numberFormat", "label": "Number format (.NET)", "type": "text" },
+              { "key": "decimals", "label": "Decimals", "type": "number" },
+              { "key": "logoUrl", "label": "Logo URL", "type": "url" }
+            ]
+          }
+        ]
       }
     ]
   }
