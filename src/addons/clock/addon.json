@@ -70,6 +70,12 @@
             "min": 0.5,
             "max": 3,
             "helpText": "Multiplier for text size (e.g. 1, 1.5, 2)"
+          },
+          {
+            "key": "transparent",
+            "label": "Transparent background (no border/shadow)",
+            "type": "toggle",
+            "defaultValue": false
           }
         ]
       }

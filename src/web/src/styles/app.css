@@ -138,6 +138,14 @@ input[type="range"] {
   inset: 0;
 }
 
+.grid-stack-item-content.tile-transparent {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .tile-toolbar {
   display: none;
   align-items: center;

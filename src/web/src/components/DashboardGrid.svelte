@@ -288,6 +288,9 @@
 
     const content = document.createElement('div');
     content.className = 'grid-stack-item-content';
+    if (dashboard.tileSettings[tile.id]?.transparent === true) {
+      content.classList.add('tile-transparent');
+    }
 
     const toolbar = document.createElement('div');
     toolbar.className = 'tile-toolbar';
