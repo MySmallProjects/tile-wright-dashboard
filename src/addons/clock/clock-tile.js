@@ -99,10 +99,10 @@ class TwAddonClock extends HTMLElement {
         }
         .date { font-size: calc(0.94rem * ${scale}); color: var(--tw-text-muted); font-weight: 500; }
       </style>
-      <div class="wrap">
-        ${layout === 'date-above' ? '<div class="date"></div>' : ''}
-        <div class="time"></div>
-        ${layout === 'date-below' ? '<div class="date"></div>' : ''}
+      <div class="wrap" part="wrap">
+        ${layout === 'date-above' ? '<div class="date" part="date"></div>' : ''}
+        <div class="time" part="time"></div>
+        ${layout === 'date-below' ? '<div class="date" part="date"></div>' : ''}
       </div>
     `;
     this.updateText();

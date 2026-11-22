@@ -16,3 +16,11 @@
   --tw-tile-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   --tw-chrome-bg: rgba(15, 23, 42, 0.92);
 }
+[data-theme="dark"] tw-addon-clock::part(time) {
+  color: orange;
+  text-shadow: 5px 5px 10px black;
+}
+[data-theme="dark"] tw-addon-clock::part(date) {
+  color: orangered;
+  text-shadow: 2px 2px 10px black;
+}

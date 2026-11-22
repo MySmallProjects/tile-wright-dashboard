@@ -66,6 +66,7 @@ All fields support `key`, `label`, `helpText`, `defaultValue`, `required`, `min`
 Tiles are standard Custom Elements (Shadow DOM recommended):
 - Host sets JS properties: `element.settings`, `element.data`, and `element.context` (`{ mode: 'view' | 'edit', theme, width, height, addonId, tileId }`).
 - **Never hardcode colours or fonts** — use `--tw-*` CSS custom properties (`--tw-text`, `--tw-text-muted`, `--tw-accent`, `--tw-surface`, `--tw-border`, `--tw-state-normal`, `--tw-state-warning`, `--tw-state-critical`, `--tw-font-family`, `--tw-tile-padding`).
+- **Expose `part="..."` attributes** on key Shadow DOM elements (e.g., `part="time"`, `part="date"`) so theme addons can style them via `::part()`. See [Section 6](#6-styling-tiles-transparent-backgrounds--theme-part-hooks).
 - Host enforces `pointer-events: none` over tile content in edit mode.
 - Tiles emit bubbling, composed `CustomEvent`s:
   - `settings-changed`: `{ detail: { ...updatedSettings } }`
@@ -149,3 +150,80 @@ if (!customElements.get('tw-hello-greeting')) {
   customElements.define('tw-hello-greeting', TwHelloGreeting);
 }
 ```
+
+---
+
+## 6. Styling Tiles, Transparent Backgrounds & Theme `::part()` Hooks
+
+### Theme Styling Inside Shadow DOM (`::part()`)
+
+Tile Web Components render inside Shadow DOM (`attachShadow({ mode: 'open' })`), so standard CSS selectors in theme stylesheets cannot target internal elements like `.time` or `.date`.
+
+To give themes full CSS control over specific elements inside a tile:
+
+1. **In the tile's JS (`*-tile.js`), add `part="..."` attributes** to the elements you want themes to target. For example, `tw-addon-clock` (`src/addons/clock/clock-tile.js`) exposes:
+   - `part="wrap"` on the outer container
+   - `part="time"` on the time display
+   - `part="date"` on the date display
+
+   ```html
+   <div class="wrap" part="wrap">
+     <div class="time" part="time"></div>
+     <div class="date" part="date"></div>
+   </div>
+   ```
+
+2. **In a theme CSS file** (e.g. `src/addons/theme-cyberpunk/cyberpunk.css`), target the tile's tag name + `::part(...)`:
+
+   ```css
+   [data-theme="dark"] tw-addon-clock::part(time) {
+     color: orange;
+     text-shadow: 5px 5px 10px black;
+   }
+
+   [data-theme="dark"] tw-addon-clock::part(date) {
+     color: #ffd599;
+     text-shadow: 2px 2px 6px black;
+   }
+   ```
+
+3. **After editing a built-in theme (or any built-in addon asset)**, rebuild the server without incrementing the build number so the updated files are copied to `bin/` without causing a frontend/server version mismatch:
+
+   ```bash
+   dotnet build --no-restore -p:IncrementBuildNumber=false src/Tilewright.Server/Tilewright.Server.csproj
+   ```
+
+> **Tip for AI / developers:** When creating or updating any tile Web Component, add descriptive `part="..."` attributes on key visual elements (labels, values, icons, containers) so theme authors can style them without modifying the tile itself.
+
+### Transparent Tile Background (`transparent` Setting)
+
+The tile card's background, border, shadow, and blur are applied by the host on `.grid-stack-item-content` (`src/web/src/styles/app.css`).
+
+When a tile has `"transparent": true` in its saved settings, `DashboardGrid.svelte` (`src/web/src/components/DashboardGrid.svelte`) adds `.tile-transparent` to `.grid-stack-item-content`:
+
+```css
+.grid-stack-item-content.tile-transparent {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+```
+
+In **Edit Mode**, `.is-edit-mode .grid-stack-item-content` still draws its dashed `outline` so transparent tiles remain visible, draggable, and resizable.
+
+#### How to Enable Transparent Background on Another Tile
+
+Because `DashboardGrid.svelte` and `app.css` already handle `.tile-transparent` generically for all tiles, you only need to add this field to the target tile's `settingsSchema` in its `addon.json`:
+
+```json
+{
+  "key": "transparent",
+  "label": "Transparent background (no border/shadow)",
+  "type": "toggle",
+  "defaultValue": false
+}
+```
+
+No JavaScript changes inside the tile are required unless the tile draws its own opaque background inside Shadow DOM (in which case, keep the Shadow DOM `:host` background `transparent`).

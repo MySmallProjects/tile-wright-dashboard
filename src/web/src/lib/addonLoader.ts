@@ -32,10 +32,11 @@ export function ensureAddonScriptLoaded(addonId: string, scriptPath: string): Pr
  * Loads CSS files contributed by enabled theme addons.
  */
 export function syncAddonThemeStylesheets(addons: AddonInfo[]): void {
+  const versionParam = encodeURIComponent(__APP_VERSION__);
   for (const addon of addons) {
     if (addon.state !== 'enabled') continue;
     for (const theme of addon.contributes.themes ?? []) {
-      const url = `/api/addons/${encodeURIComponent(addon.id)}/assets/${theme.cssFile.replace(/^\/+/, '')}`;
+      const url = `/api/addons/${encodeURIComponent(addon.id)}/assets/${theme.cssFile.replace(/^\/+/, '')}?v=${versionParam}`;
       if (loadedThemes.has(url)) continue;
       loadedThemes.add(url);
       const link = document.createElement('link');
