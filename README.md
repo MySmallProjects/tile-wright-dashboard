@@ -13,6 +13,32 @@
 >
 > See [docs/architecture.md](docs/architecture.md) for the full trust model and [docs/improvements.md](docs/improvements.md) for future isolation ideas.
 
+
+## Install
+
+For the *release* version, it'll download the latest release package and install it. 
+Download the install script:
+ ```bash
+   curl -O -x https://yunohost.lan/gitea/ice/tile-wright/raw/branch/main/scripts/install-latest-release.sh 
+   sudo chmod +x install-latest-release.sh
+ ```
+
+Run it:
+```./install-latest-release.sh --insecure-ssl --repo https://yunohost.lan/gitea/ice/tile-wright.git```
+
+
+For the *Dev* version, it'll download the source, install depdencies and compile the code.
+Download the install script:
+```bash
+curl -O -x https://yunohost.lan/gitea/ice/tile-wright/raw/branch/main/scripts/install-dev.sh
+chmod +x install-dev.sh
+ ```
+
+Run it:
+```./install-dev.sh```
+
+
+
 ## Quick Start
 
 ### Backend & Frontend (Phase 3 — .NET 10 + Svelte 5)
