@@ -135,18 +135,31 @@ fi
 REPO_URL="${REPO_URL%/}"
 REPO_URL="${REPO_URL%.git}"
 
-# Parse URL components via python3
-read -r URL_SCHEME URL_NETLOC REPO_PATH <<< "$(python3 - "$REPO_URL" <<'PY'
-import sys
+# Parse URL components via python3 (supports subpath-hosted Gitea e.g. /gitea/owner/repo)
+PARSED_URL="$(python3 - "$REPO_URL" <<'PY'
+import shlex, sys
 from urllib.parse import urlparse
 
 u = urlparse(sys.argv[1])
-if u.scheme not in ("http", "https") or not u.netloc or not u.path.strip("/"):
-    sys.stderr.write(f"Error: Invalid repository URL: {sys.argv[1]}\n")
+parts = [p for p in u.path.strip("/").split("/") if p]
+if u.scheme not in ("http", "https") or not u.netloc or len(parts) < 2:
+    sys.stderr.write(f"Error: Invalid repository URL (expected http(s)://host/[subpath/]owner/repo): {sys.argv[1]}\n")
     sys.exit(1)
-print(u.scheme, u.netloc, u.path.strip("/"))
+
+owner, repo = parts[-2], parts[-1]
+base_path = "/" + "/".join(parts[:-2]) if len(parts) > 2 else ""
+repo_path = f"{owner}/{repo}"
+print(f"URL_SCHEME={shlex.quote(u.scheme)}")
+print(f"URL_NETLOC={shlex.quote(u.netloc)}")
+print(f"URL_BASE_PATH={shlex.quote(base_path)}")
+print(f"REPO_PATH={shlex.quote(repo_path)}")
 PY
 )"
+URL_SCHEME=""
+URL_NETLOC=""
+URL_BASE_PATH=""
+REPO_PATH=""
+eval "$PARSED_URL"
 
 if [[ "$URL_SCHEME" == "http" ]]; then
   echo "[Notice] Repository URL uses plain HTTP (no HTTPS): $REPO_URL"
@@ -164,24 +177,26 @@ elif [[ "$URL_SCHEME" == "https" && "$INSECURE_SSL" != "true" && "$AUTO_YES" != 
   fi
 fi
 
-# Build curl arguments
-CURL_ARGS=(-fsSL)
+# Build curl arguments (separate API vs asset download headers)
+API_CURL_ARGS=(-fsSL)
+DL_CURL_ARGS=(-fsSL)
 if [[ "$INSECURE_SSL" == "true" ]]; then
-  CURL_ARGS+=(-k)
+  API_CURL_ARGS+=(-k)
+  DL_CURL_ARGS+=(-k)
 fi
 
-IS_GITHUB=false
 if [[ "$URL_NETLOC" == "github.com" || "$URL_NETLOC" == "www.github.com" ]]; then
-  IS_GITHUB=true
   API_URL="https://api.github.com/repos/${REPO_PATH}/releases/latest"
-  CURL_ARGS+=(-H "Accept: application/vnd.github+json")
+  API_CURL_ARGS+=(-H "Accept: application/vnd.github+json")
   if [[ -n "$AUTH_TOKEN" ]]; then
-    CURL_ARGS+=(-H "Authorization: Bearer ${AUTH_TOKEN}")
+    API_CURL_ARGS+=(-H "Authorization: Bearer ${AUTH_TOKEN}")
+    DL_CURL_ARGS+=(-H "Authorization: Bearer ${AUTH_TOKEN}")
   fi
 else
-  API_URL="${URL_SCHEME}://${URL_NETLOC}/api/v1/repos/${REPO_PATH}/releases/latest"
+  API_URL="${URL_SCHEME}://${URL_NETLOC}${URL_BASE_PATH}/api/v1/repos/${REPO_PATH}/releases/latest"
   if [[ -n "$AUTH_TOKEN" ]]; then
-    CURL_ARGS+=(-H "Authorization: token ${AUTH_TOKEN}")
+    API_CURL_ARGS+=(-H "Authorization: token ${AUTH_TOKEN}")
+    DL_CURL_ARGS+=(-H "Authorization: token ${AUTH_TOKEN}")
   fi
 fi
 
@@ -189,23 +204,40 @@ fi
 echo "[Release] Checking latest release from $API_URL ..."
 TMP_DIR="$(mktemp -d "/tmp/tilewright-download-XXXXXX")"
 cleanup() {
-  rm -rf "$TMP_DIR"
+  rm -rf "${TMP_DIR:-}"
 }
 trap cleanup EXIT
 
 RELEASE_JSON="$TMP_DIR/release.json"
-if ! curl "${CURL_ARGS[@]}" "$API_URL" -o "$RELEASE_JSON"; then
+if ! curl "${API_CURL_ARGS[@]}" "$API_URL" -o "$RELEASE_JSON"; then
   echo "Error: Failed to fetch latest release metadata from $API_URL."
   echo "Check the repository URL, network connectivity, --token (if private), or --insecure-ssl."
   exit 1
 fi
 
 # Parse release tag, matching zip asset, and optional .sha256 asset
-eval "$(python3 - "$RELEASE_JSON" "$RID" <<'PY'
+PARSED_RELEASE="$(python3 - "$RELEASE_JSON" "$RID" <<'PY'
 import json, shlex, sys
 
-with open(sys.argv[1], "r", encoding="utf-8") as f:
-    data = json.load(f)
+with open(sys.argv[1], "r", encoding="utf-8", errors="replace") as f:
+    raw = f.read()
+
+try:
+    data = json.loads(raw)
+except json.JSONDecodeError:
+    snippet = raw.strip().replace("\n", " ")[:200]
+    sys.stderr.write("Error: Server did not return valid JSON for the latest release.\n")
+    sys.stderr.write(f"Response preview: {snippet}\n")
+    sys.stderr.write("Check the repository URL (including any subpath like /gitea) or --token if the repo is private.\n")
+    sys.exit(1)
+
+if not isinstance(data, dict):
+    sys.stderr.write("Error: Unexpected release metadata format from server.\n")
+    sys.exit(1)
+
+if "assets" not in data and "message" in data:
+    sys.stderr.write(f"Error from server API: {data['message']}\n")
+    sys.exit(1)
 
 rid = sys.argv[2]
 tag = data.get("tag_name") or data.get("name") or "unknown"
@@ -223,6 +255,8 @@ if not zip_asset:
     sys.stderr.write(f"Error: No release asset ending with '-{rid}.zip' found in release '{tag}'.\n")
     if names:
         sys.stderr.write("Available assets: " + ", ".join(names) + "\n")
+    else:
+        sys.stderr.write("This release has no attached assets.\n")
     sys.exit(1)
 
 zip_name = zip_asset["name"]
@@ -239,6 +273,12 @@ print(f"ASSET_URL={shlex.quote(zip_url)}")
 print(f"SHA_URL={shlex.quote(sha_url)}")
 PY
 )"
+
+LATEST_TAG=""
+ASSET_NAME=""
+ASSET_URL=""
+SHA_URL=""
+eval "$PARSED_RELEASE"
 
 if [[ -z "$ASSET_URL" ]]; then
   echo "Error: Release asset '$ASSET_NAME' does not have a download URL."
@@ -282,12 +322,12 @@ fi
 # 7. Download release zip and verify SHA256 if provided
 ZIP_FILE="$TMP_DIR/$ASSET_NAME"
 echo "[Downloading] $ASSET_URL ..."
-curl "${CURL_ARGS[@]}" "$ASSET_URL" -o "$ZIP_FILE"
+curl "${DL_CURL_ARGS[@]}" "$ASSET_URL" -o "$ZIP_FILE"
 
 if [[ -n "$SHA_URL" ]]; then
   SHA_FILE="$TMP_DIR/${ASSET_NAME}.sha256"
   echo "[Verifying] Downloading and checking SHA256 checksum..."
-  if curl "${CURL_ARGS[@]}" "$SHA_URL" -o "$SHA_FILE"; then
+  if curl "${DL_CURL_ARGS[@]}" "$SHA_URL" -o "$SHA_FILE"; then
     (
       cd "$TMP_DIR"
       sha256sum -c "$(basename "$SHA_FILE")"
