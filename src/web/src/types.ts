@@ -148,9 +148,17 @@ export interface ThemeContribution {
   preferredIconPack?: string | null;
 }
 
+export interface SettingsTabContribution {
+  id: string;
+  label: string;
+  scope: 'user' | 'admin' | string;
+  element: TileElementSpec;
+}
+
 export interface AddonContributions {
   tiles: TileTypeContribution[];
   themes: ThemeContribution[];
+  settingsTabs?: SettingsTabContribution[];
   addonSettingsSchema: SettingsFieldSchema[];
 }
 

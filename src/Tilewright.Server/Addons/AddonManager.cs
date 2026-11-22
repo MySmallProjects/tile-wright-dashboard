@@ -315,7 +315,9 @@ public sealed class AddonManager(
         logger.LogInformation("Loaded server component for addon {AddonId} v{Version}.", entry.Manifest.Id, entry.Manifest.Version);
     }
 
-    public AddonOverviewDto GetOverview()
+    public AddonOverviewDto GetOverview() => GetOverviewAsync().GetAwaiter().GetResult();
+
+    public async Task<AddonOverviewDto> GetOverviewAsync(AddonUserContext? user = null, CancellationToken ct = default)
     {
         var list = new List<AddonInfoDto>();
         var tiles = new List<AddonTileDto>();
@@ -393,6 +395,37 @@ public sealed class AddonManager(
                     catch (Exception ex)
                     {
                         logger.LogWarning(ex, "Failed to read icon pack manifest for {AddonId}/{PackId}", a.Manifest.Id, pack.Id);
+                    }
+                }
+
+                if (a.ServerModule?.DynamicIconPackProvider is not null && a.HostContext is not null)
+                {
+                    try
+                    {
+                        var dynamicPacks = await a.ServerModule.DynamicIconPackProvider.GetIconPacksAsync(user, a.HostContext, ct);
+                        foreach (var pack in dynamicPacks)
+                        {
+                            var items = new List<AddonIconItemDto>();
+                            foreach (var ic in pack.Icons)
+                            {
+                                if (string.IsNullOrWhiteSpace(ic.Name) || string.IsNullOrWhiteSpace(ic.AssetPath)) continue;
+                                var relUrl = $"/api/addons/{Uri.EscapeDataString(a.Manifest.Id)}/assets/{ic.AssetPath.TrimStart('/')}";
+                                items.Add(new AddonIconItemDto(
+                                    RefId: $"{pack.PackId}:{ic.Name}",
+                                    Name: ic.Name,
+                                    Label: string.IsNullOrWhiteSpace(ic.Label) ? ic.Name : ic.Label,
+                                    ImageUrl: relUrl,
+                                    Color: ic.Color));
+                            }
+                            if (items.Count > 0)
+                            {
+                                iconPacks.Add(new AddonIconPackDto(a.Manifest.Id, pack.PackId, pack.PackName, items));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to load dynamic icon packs for {AddonId}", a.Manifest.Id);
                     }
                 }
             }
@@ -501,7 +534,7 @@ public sealed class AddonManager(
         return Task.FromResult<(bool, string?)>((true, null));
     }
 
-    public string? ResolveAssetPath(string addonId, string relativePath)
+    public string? ResolveAssetPath(string addonId, string relativePath, AddonUserContext? user = null)
     {
         if (!AddonIdValidator.IsValid(addonId)) return null;
         if (!_addons.TryGetValue(addonId, out var entry)) return null;
@@ -517,11 +550,27 @@ public sealed class AddonManager(
         var rootFull = Path.GetFullPath(entry.DirectoryPath);
         var prefix = rootFull.EndsWith(Path.DirectorySeparatorChar) ? rootFull : rootFull + Path.DirectorySeparatorChar;
         var full = Path.GetFullPath(Path.Combine(rootFull, relativePath));
-        if (!full.StartsWith(prefix, StringComparison.Ordinal) || !File.Exists(full))
+        if (full.StartsWith(prefix, StringComparison.Ordinal) && File.Exists(full))
         {
-            return null;
+            return full;
         }
-        return full;
+
+        if (entry.ServerModule?.DynamicIconPackProvider is not null && entry.HostContext is not null)
+        {
+            var dynPath = entry.ServerModule.DynamicIconPackProvider.ResolveAssetPath(relativePath, user, entry.HostContext);
+            if (!string.IsNullOrWhiteSpace(dynPath))
+            {
+                var dataRoot = Path.GetFullPath(entry.HostContext.DataFolder);
+                var dataPrefix = dataRoot.EndsWith(Path.DirectorySeparatorChar) ? dataRoot : dataRoot + Path.DirectorySeparatorChar;
+                var dynFull = Path.GetFullPath(dynPath);
+                if (dynFull.StartsWith(dataPrefix, StringComparison.Ordinal) && File.Exists(dynFull))
+                {
+                    return dynFull;
+                }
+            }
+        }
+
+        return null;
     }
 
     public async Task<Dictionary<string, JsonElement>> GetAddonSettingsRawAsync(string addonId, CancellationToken ct = default)
@@ -600,10 +649,18 @@ public sealed class AddonManager(
         return await entry.ServerModule.DynamicOptionsProvider.GetOptionsAsync(endpoint, entry.HostContext, ct);
     }
 
+    public Task<object?> InvokeActionAsync(
+        string addonId,
+        string action,
+        JsonElement? payload,
+        CancellationToken ct = default) =>
+        InvokeActionAsync(addonId, action, payload, null, ct);
+
     public async Task<object?> InvokeActionAsync(
         string addonId,
         string action,
         JsonElement? payload,
+        AddonUserContext? user,
         CancellationToken ct = default)
     {
         if (!_addons.TryGetValue(addonId, out var entry) ||
@@ -614,7 +671,22 @@ public sealed class AddonManager(
             return null;
         }
 
-        return await entry.ServerModule.ActionHandler.HandleActionAsync(action, payload, entry.HostContext, ct);
+        var ctx = user is null
+            ? entry.HostContext
+            : new ScopedAddonHostContext(entry.HostContext, user);
+        return await entry.ServerModule.ActionHandler.HandleActionAsync(action, payload, ctx, ct);
+    }
+
+    private sealed class ScopedAddonHostContext(IAddonHostContext inner, AddonUserContext user) : IAddonHostContext
+    {
+        public string AddonId => inner.AddonId;
+        public string DataFolder => inner.DataFolder;
+        public IAddonHttpClientFactory Http => inner.Http;
+        public IAddonSecretStore Secrets => inner.Secrets;
+        public IAddonSettingsReader Settings => inner.Settings;
+        public IAddonPushService Push => inner.Push;
+        public ILogger Logger => inner.Logger;
+        public AddonUserContext? CurrentUser => user;
     }
 
     private sealed class AddonHostContext(

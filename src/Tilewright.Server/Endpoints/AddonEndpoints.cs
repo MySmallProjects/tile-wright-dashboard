@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.StaticFiles;
+using Tilewright.AddonContracts;
 using Tilewright.Server.Addons;
+using Tilewright.Server.Models;
 
 namespace Tilewright.Server.Endpoints;
 
@@ -12,16 +15,26 @@ public static class AddonEndpoints
 
     private static readonly FileExtensionContentTypeProvider ContentTypes = new();
 
+    private static AddonUserContext? GetUserContext(HttpContext http)
+    {
+        var userId = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return null;
+        var isAdmin = http.User.IsInRole(UserRoles.Admin) ||
+                      string.Equals(http.User.FindFirstValue(ClaimTypes.Role), UserRoles.Admin, StringComparison.OrdinalIgnoreCase);
+        return new AddonUserContext(userId, isAdmin);
+    }
+
     public static IEndpointRouteBuilder MapAddonEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/addons").WithTags("Addons");
 
-        group.MapGet("/", (AddonManager addons) => Results.Ok(addons.GetOverview()))
+        group.MapGet("/", async (AddonManager addons, HttpContext http, CancellationToken ct) =>
+            Results.Ok(await addons.GetOverviewAsync(GetUserContext(http), ct)))
             .RequireAuthorization();
 
         group.MapGet("/{addonId}/assets/{**assetPath}", (string addonId, string assetPath, AddonManager addons, HttpContext http) =>
         {
-            var fullPath = addons.ResolveAssetPath(addonId, assetPath);
+            var fullPath = addons.ResolveAssetPath(addonId, assetPath, GetUserContext(http));
             if (fullPath is null) return Results.NotFound();
 
             if (!ContentTypes.TryGetContentType(fullPath, out var contentType))
@@ -149,9 +162,10 @@ public static class AddonEndpoints
             string action,
             JsonElement? payload,
             AddonManager addons,
+            HttpContext http,
             CancellationToken ct) =>
         {
-            var result = await addons.InvokeActionAsync(addonId, action, payload, ct);
+            var result = await addons.InvokeActionAsync(addonId, action, payload, GetUserContext(http), ct);
             return Results.Ok(new { accepted = true, result });
         }).RequireAuthorization();
 

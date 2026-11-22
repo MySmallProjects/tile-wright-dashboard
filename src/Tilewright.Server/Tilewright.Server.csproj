@@ -34,6 +34,7 @@
     <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\homeassistant" SkipUnchangedFiles="true" />
     <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\openmeteo" SkipUnchangedFiles="true" />
     <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\http-get" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_BuiltInDll)')" SourceFiles="$(_BuiltInDll)" DestinationFolder="$(OutputPath)addons\custom-icons" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyBuiltInAddonAssembliesOnPublish" AfterTargets="Publish">
@@ -45,6 +46,7 @@
     <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\homeassistant" SkipUnchangedFiles="true" />
     <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\openmeteo" SkipUnchangedFiles="true" />
     <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\http-get" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(_PublishedDll)')" SourceFiles="$(_PublishedDll)" DestinationFolder="$(PublishDir)addons\custom-icons" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

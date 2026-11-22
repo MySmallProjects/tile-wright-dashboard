@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api, ApiError } from '../lib/api';
+  import { ensureAddonScriptLoaded } from '../lib/addonLoader';
   import type {
     AddonOverview,
     BackgroundSettings,
     PublicUser,
+    SettingsTabContribution,
     SiteSettings,
     UserSettings,
     VersionInfo
@@ -41,8 +43,10 @@
     onNotify: (msg: string) => void;
   } = $props();
 
-  type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'backup' | 'about';
+  type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'backup' | 'about' | `addon:${string}`;
   let activeTab = $state<TabId>('appearance');
+  let addonTabHost = $state<HTMLDivElement | null>(null);
+  let addonTabError = $state('');
 
   // Local editable copies (snapshot Svelte 5 $state proxies before cloning)
   const clone = <T>(val: T): T => structuredClone($state.snapshot(val)) as T;
@@ -248,6 +252,58 @@
     }
     return list;
   });
+
+  let addonSettingsTabs = $derived.by(() => {
+    const isAdmin = currentUser.role === 'admin';
+    const result: { tabKey: `addon:${string}`; addonId: string; spec: SettingsTabContribution }[] = [];
+    for (const addon of addonOverview.addons) {
+      if (addon.state !== 'enabled') continue;
+      for (const spec of addon.contributes.settingsTabs ?? []) {
+        if (spec.scope === 'admin' && !isAdmin) continue;
+        result.push({ tabKey: `addon:${addon.id}:${spec.id}`, addonId: addon.id, spec });
+      }
+    }
+    return result;
+  });
+
+  let activeAddonTab = $derived(addonSettingsTabs.find((t) => t.tabKey === activeTab) ?? null);
+
+  $effect(() => {
+    const tab = activeAddonTab;
+    const host = addonTabHost;
+    if (!tab || !host) return;
+
+    let cancelled = false;
+    addonTabError = '';
+    host.innerHTML = '';
+
+    ensureAddonScriptLoaded(tab.addonId, tab.spec.element.script)
+      .then(() => {
+        if (cancelled) return;
+        const el = document.createElement(tab.spec.element.tagName) as HTMLElement & { context?: unknown };
+        el.context = {
+          addonId: tab.addonId,
+          isAdmin: currentUser.role === 'admin',
+          user: currentUser,
+          invokeAction: async (action: string, payload?: unknown) => {
+            const res = await api.invokeAddonAction(tab.addonId, action, payload);
+            return res.result;
+          },
+          refreshAddons: onRefreshAddons,
+          notify: onNotify
+        };
+        host.innerHTML = '';
+        host.appendChild(el);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        addonTabError = err instanceof Error ? err.message : 'Failed to load addon settings tab.';
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
 </script>
 
 <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Settings">
@@ -277,6 +333,11 @@
           Backup
         </button>
       {/if}
+      {#each addonSettingsTabs as at (at.tabKey)}
+        <button type="button" class:active={activeTab === at.tabKey} onclick={() => (activeTab = at.tabKey)}>
+          {at.spec.label}
+        </button>
+      {/each}
       <button type="button" class:active={activeTab === 'about'} onclick={() => (activeTab = 'about')}>
         Version
       </button>
@@ -526,6 +587,11 @@
             <p class="muted">Server version not loaded.</p>
           {/if}
         </section>
+      {:else if activeAddonTab}
+        {#if addonTabError}
+          <div class="error-text">{addonTabError}</div>
+        {/if}
+        <div class="addon-tab-host" bind:this={addonTabHost}></div>
       {/if}
     </div>
   </div>

@@ -37,7 +37,16 @@ public sealed class AddonContributions
     public ServerContribution? Server { get; set; }
     public List<ThemeContribution> Themes { get; set; } = [];
     public List<IconPackContribution> IconPacks { get; set; } = [];
+    public List<SettingsTabContribution> SettingsTabs { get; set; } = [];
     public List<SettingsFieldSchema> AddonSettingsSchema { get; set; } = [];
+}
+
+public sealed class SettingsTabContribution
+{
+    public string Id { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Scope { get; set; } = "user"; // "user" | "admin"
+    public TileElementSpec Element { get; set; } = new();
 }
 
 public sealed class TileTypeContribution

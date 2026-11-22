@@ -1,0 +1,25 @@
+{
+  "id": "custom-icons",
+  "name": "Custom Icons",
+  "version": "1.0.0",
+  "description": "Allows admins to upload Site Icons and users to upload personal My Icons for use across all tiles and dashboards.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.CustomIconsAddonModule"
+    },
+    "settingsTabs": [
+      {
+        "id": "custom-icons",
+        "label": "Custom Icons",
+        "scope": "user",
+        "element": {
+          "tagName": "tw-addon-custom-icons-settings",
+          "script": "custom-icons-settings.js"
+        }
+      }
+    ]
+  }
+}

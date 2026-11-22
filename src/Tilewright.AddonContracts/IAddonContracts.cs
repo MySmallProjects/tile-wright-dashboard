@@ -5,6 +5,12 @@ namespace Tilewright.AddonContracts;
 
 public sealed record DynamicOption(string Value, string Label);
 
+public sealed record AddonUserContext(string UserId, bool IsAdmin);
+
+public sealed record DynamicIconItem(string Name, string Label, string AssetPath, bool Color = true);
+
+public sealed record DynamicIconPack(string PackId, string PackName, IReadOnlyList<DynamicIconItem> Icons);
+
 public interface IAddonSecretStore
 {
     Task<string?> GetSecretAsync(string key, CancellationToken ct = default);
@@ -36,6 +42,7 @@ public interface IAddonHostContext
     IAddonSettingsReader Settings { get; }
     IAddonPushService Push { get; }
     ILogger Logger { get; }
+    AddonUserContext? CurrentUser => null;
 }
 
 public interface IDataProvider
@@ -63,10 +70,24 @@ public interface IDynamicOptionsProvider
         CancellationToken ct = default);
 }
 
+public interface IDynamicIconPackProvider
+{
+    Task<IReadOnlyList<DynamicIconPack>> GetIconPacksAsync(
+        AddonUserContext? user,
+        IAddonHostContext host,
+        CancellationToken ct = default);
+
+    string? ResolveAssetPath(
+        string assetPath,
+        AddonUserContext? user,
+        IAddonHostContext host) => null;
+}
+
 public interface IAddonModule
 {
     Task InitializeAsync(IAddonHostContext host, CancellationToken ct = default);
     IReadOnlyList<IDataProvider> DataProviders => [];
     IActionHandler? ActionHandler => null;
     IDynamicOptionsProvider? DynamicOptionsProvider => null;
+    IDynamicIconPackProvider? DynamicIconPackProvider => null;
 }
