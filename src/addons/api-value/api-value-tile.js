@@ -98,35 +98,70 @@ class TwAddonApiValue extends HTMLElement {
   render() {
     const label = this._settings.label || 'API Value';
     const logoUrl = this._settings.logoUrl || '';
+    const isInline = this._settings.layout === 'inline';
     const st = this._state;
+
+    const inlineRightHtml = st.needsSetup
+      ? '<div class="sub" title="Set API URL & JSON path">Needs setup</div>'
+      : st.value !== null
+        ? `<div class="val" title="${st.error ? st.error : `Updated ${st.updated}`}">${st.value}</div>`
+        : st.error
+          ? `<div class="err" title="${st.error}">${st.error}</div>`
+          : '<div class="sub">Loading...</div>';
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: flex; width: 100%; height: 100%; color: var(--tw-text); font-family: var(--tw-font-family); }
+        *, *::before, *::after { box-sizing: border-box; }
+        :host { display: flex; width: 100%; height: 100%; color: var(--tw-text); font-family: var(--tw-font-family); overflow: hidden; }
         .wrap {
           flex: 1; display: flex; flex-direction: column; justify-content: space-between;
           padding: var(--tw-tile-padding, 14px); gap: 6px; min-width: 0;
         }
-        .head { display: flex; align-items: center; gap: 8px; }
-        .logo { width: 22px; height: 22px; object-fit: contain; border-radius: 4px; }
+        .wrap.inline {
+          flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        .head,
+        .left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .left { flex: 1; }
+        .right {
+          display: flex; align-items: center; justify-content: flex-end;
+          flex-shrink: 0; text-align: right; min-width: 0; max-width: 60%;
+        }
+        .logo { width: 22px; height: 22px; object-fit: contain; border-radius: 4px; flex-shrink: 0; }
         .label { font-size: 0.84rem; font-weight: 600; color: var(--tw-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wrap.inline .label { font-size: 0.9rem; }
         .val { font-size: 1.75rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+        .wrap.inline .val { font-size: 1.25rem; white-space: nowrap; }
         .sub { font-size: 0.74rem; color: var(--tw-text-muted); }
         .err { font-size: 0.82rem; color: var(--tw-state-critical); }
+        .wrap.inline .sub,
+        .wrap.inline .err {
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
       </style>
-      <div class="wrap">
-        <div class="head">
-          ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="" />` : ''}
-          <span class="label">${label}</span>
-        </div>
-        ${st.needsSetup
-          ? '<div class="sub"><strong>Needs setup</strong> — set API URL & JSON path.</div>'
-          : st.value !== null
-            ? `<div class="val">${st.value}</div><div class="sub">${st.error ? st.error : `Updated ${st.updated}`}</div>`
-            : st.error
-              ? `<div class="err">${st.error}</div>`
-              : '<div class="sub">Loading...</div>'}
-      </div>
+      ${isInline
+        ? `<div class="wrap inline">
+             <div class="left">
+               ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="" />` : ''}
+               <span class="label">${label}</span>
+             </div>
+             <div class="right">
+               ${inlineRightHtml}
+             </div>
+           </div>`
+        : `<div class="wrap">
+             <div class="head">
+               ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="" />` : ''}
+               <span class="label">${label}</span>
+             </div>
+             ${st.needsSetup
+               ? '<div class="sub"><strong>Needs setup</strong> — set API URL & JSON path.</div>'
+               : st.value !== null
+                 ? `<div class="val">${st.value}</div><div class="sub">${st.error ? st.error : `Updated ${st.updated}`}</div>`
+                 : st.error
+                   ? `<div class="err">${st.error}</div>`
+                   : '<div class="sub">Loading...</div>'}
+           </div>`}
     `;
   }
 }

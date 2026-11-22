@@ -22,10 +22,20 @@
         "icon": "chart-line",
         "element": { "tagName": "tw-addon-api-value", "script": "api-value-tile.js" },
         "defaultSize": { "w": 4, "h": 2 },
-        "minSize": { "w": 2, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
         "maxSize": { "w": 12, "h": 6 },
         "settingsSchema": [
           { "key": "label", "label": "Label", "type": "text", "required": true, "defaultValue": "BP.L" },
+          {
+            "key": "layout",
+            "label": "Layout",
+            "type": "select",
+            "defaultValue": "stacked",
+            "options": [
+              { "value": "stacked", "label": "Stacked (default)" },
+              { "value": "inline", "label": "One line" }
+            ]
+          },
           { "key": "apiUrl", "label": "JSON API URL", "type": "url", "required": true, "helpText": "Fetched by the server (CORS-free)." },
           { "key": "jsonPath", "label": "JSON path", "type": "text", "helpText": "Dot/bracket path, e.g. chart.result[0].meta.regularMarketPrice" },
           { "key": "prefix", "label": "Prefix", "type": "text", "helpText": "e.g. £ or $" },

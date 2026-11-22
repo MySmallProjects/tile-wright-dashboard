@@ -19,7 +19,7 @@ public static class AddonEndpoints
         group.MapGet("/", (AddonManager addons) => Results.Ok(addons.GetOverview()))
             .RequireAuthorization();
 
-        group.MapGet("/{addonId}/assets/{**assetPath}", (string addonId, string assetPath, AddonManager addons) =>
+        group.MapGet("/{addonId}/assets/{**assetPath}", (string addonId, string assetPath, AddonManager addons, HttpContext http) =>
         {
             var fullPath = addons.ResolveAssetPath(addonId, assetPath);
             if (fullPath is null) return Results.NotFound();
@@ -31,6 +31,7 @@ public static class AddonEndpoints
                     : "application/octet-stream";
             }
 
+            http.Response.Headers.CacheControl = "no-cache";
             return Results.File(fullPath, contentType);
         }).RequireAuthorization();
 

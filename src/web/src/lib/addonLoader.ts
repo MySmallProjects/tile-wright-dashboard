@@ -7,7 +7,8 @@ const loadedThemes = new Set<string>();
  * Lazily loads an addon's ES module script once (only for tile types or custom settings actually in use).
  */
 export function ensureAddonScriptLoaded(addonId: string, scriptPath: string): Promise<void> {
-  const url = `/api/addons/${encodeURIComponent(addonId)}/assets/${scriptPath.replace(/^\/+/, '')}`;
+  const versionParam = encodeURIComponent(__APP_VERSION__);
+  const url = `/api/addons/${encodeURIComponent(addonId)}/assets/${scriptPath.replace(/^\/+/, '')}?v=${versionParam}`;
   const existing = loadedScripts.get(url);
   if (existing) return existing;
 
