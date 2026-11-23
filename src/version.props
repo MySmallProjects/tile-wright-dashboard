@@ -6,7 +6,7 @@
   -->
   <PropertyGroup>
     <Major>0</Major>
-    <Minor>2</Minor>
+    <Minor>3</Minor>
     <Patch>0</Patch>
     <BuildNumberFile>$(MSBuildThisFileDirectory)build-number.txt</BuildNumberFile>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

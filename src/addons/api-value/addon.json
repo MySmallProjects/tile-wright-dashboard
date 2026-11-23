@@ -60,13 +60,16 @@
           { "key": "apiUrl", "label": "JSON API URL", "type": "url", "required": true, "helpText": "Fetched once by the server (CORS-free)." },
           { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" },
           { "key": "showUpdated", "label": "Show updated time", "type": "toggle", "defaultValue": true },
+          { "key": "positiveColour", "label": "Positive colour", "type": "colour", "defaultValue": "#22c55e" },
+          { "key": "negativeColour", "label": "Negative colour", "type": "colour", "defaultValue": "#ef4444" },
           {
             "key": "items",
             "label": "Items",
             "type": "group",
             "fields": [
               { "key": "label", "label": "Label", "type": "text" },
-              { "key": "jsonPath", "label": "JSON path", "type": "text" },
+              { "key": "priceJson", "label": "Price JSON", "type": "text" },
+              { "key": "changeJson", "label": "Change JSON", "type": "text" },
               { "key": "prefix", "label": "Prefix", "type": "text" },
               { "key": "suffix", "label": "Suffix", "type": "text" },
               { "key": "numberFormat", "label": "Number format (.NET)", "type": "text" },

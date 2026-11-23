@@ -83,6 +83,67 @@ public sealed class AddonHelpersTests
     }
 
     [Fact]
+    public void ApiValueChange_FormatsToOneDecimalDroppingTrailingZeroAndSign()
+    {
+        Assert.Equal("0.7", ApiValueAddonModule.FormatChangeValue(0.6822144840730399));
+        Assert.Equal("2", ApiValueAddonModule.FormatChangeValue(2.0));
+        Assert.Equal("2", ApiValueAddonModule.FormatChangeValue(-2.04));
+        Assert.Equal("1.5", ApiValueAddonModule.FormatChangeValue(-1.54));
+        Assert.Equal("0", ApiValueAddonModule.FormatChangeValue(0));
+    }
+
+    [Fact]
+    public void ApiValueChange_ExtractsValidAndWarnsOnInvalidOrMissing()
+    {
+        using var root = JsonDocument.Parse("""
+        {
+          "stock": {
+            "pos": 0.6822144840730399,
+            "neg": -2.0,
+            "strNum": "-1.25",
+            "bad": "N/A"
+          }
+        }
+        """);
+
+        using var emptyCfg = JsonDocument.Parse("""{ "priceJson": "stock.pos", "changeJson": "" }""");
+        var empty = ApiValueAddonModule.ExtractChange(root.RootElement, emptyCfg.RootElement);
+        Assert.Null(empty.Value);
+        Assert.Null(empty.Display);
+        Assert.Null(empty.Warning);
+
+        using var posCfg = JsonDocument.Parse("""{ "changeJson": "stock.pos" }""");
+        var pos = ApiValueAddonModule.ExtractChange(root.RootElement, posCfg.RootElement);
+        Assert.Equal(0.6822144840730399, pos.Value!.Value, precision: 6);
+        Assert.Equal("0.7", pos.Display);
+        Assert.Null(pos.Warning);
+
+        using var negCfg = JsonDocument.Parse("""{ "changeJson": "stock.neg" }""");
+        var neg = ApiValueAddonModule.ExtractChange(root.RootElement, negCfg.RootElement);
+        Assert.Equal(-2.0, neg.Value!.Value, precision: 6);
+        Assert.Equal("2", neg.Display);
+        Assert.Null(neg.Warning);
+
+        using var strCfg = JsonDocument.Parse("""{ "changeJson": "stock.strNum" }""");
+        var str = ApiValueAddonModule.ExtractChange(root.RootElement, strCfg.RootElement);
+        Assert.Equal(-1.25, str.Value!.Value, precision: 6);
+        Assert.Equal("1.3", str.Display);
+        Assert.Null(str.Warning);
+
+        using var missingCfg = JsonDocument.Parse("""{ "changeJson": "stock.missing" }""");
+        var missing = ApiValueAddonModule.ExtractChange(root.RootElement, missingCfg.RootElement);
+        Assert.Null(missing.Value);
+        Assert.Null(missing.Display);
+        Assert.Contains("not found", missing.Warning);
+
+        using var badCfg = JsonDocument.Parse("""{ "changeJson": "stock.bad" }""");
+        var bad = ApiValueAddonModule.ExtractChange(root.RootElement, badCfg.RootElement);
+        Assert.Null(bad.Value);
+        Assert.Null(bad.Display);
+        Assert.Contains("\"N/A\"", bad.Warning);
+    }
+
+    [Fact]
     public void OpenMeteoHelpers_MapWmoCodesAndExtractTimes()
     {
         Assert.Equal(("Clear sky", "1.svg"), OpenMeteoAddonModule.MapWmoCode(0));

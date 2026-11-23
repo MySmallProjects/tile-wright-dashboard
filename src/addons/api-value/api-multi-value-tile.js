@@ -47,7 +47,7 @@ class TwAddonApiMultiValue extends HTMLElement {
 
   _getConfiguredItems() {
     return Array.isArray(this._settings.items)
-      ? this._settings.items.filter((x) => x && (x.jsonPath || x.label))
+      ? this._settings.items.filter((x) => x && (x.priceJson || x.label))
       : [];
   }
 
@@ -82,7 +82,8 @@ class TwAddonApiMultiValue extends HTMLElement {
           apiUrl: this._settings.apiUrl,
           refreshInterval: this._settings.refreshInterval || '2h',
           items: configured.map((item) => ({
-            jsonPath: item.jsonPath || '',
+            priceJson: item.priceJson || '',
+            changeJson: item.changeJson || '',
             prefix: item.prefix || '',
             suffix: item.suffix || '',
             numberFormat: item.numberFormat || '',
@@ -97,9 +98,17 @@ class TwAddonApiMultiValue extends HTMLElement {
           } else if (res.error) {
             this._state = { loading: false, items: this._state.items, error: res.error, needsSetup: false, updated: this._state.updated };
           } else {
+            const items = Array.isArray(res.items) ? res.items : [];
+            items.forEach((item, idx) => {
+              if (item && item.changeWarning) {
+                const cfg = configured[idx];
+                const itemLabel = cfg?.label || cfg?.priceJson || `Item ${idx + 1}`;
+                console.warn(`[API / Stock List] ${itemLabel}: ${item.changeWarning}`);
+              }
+            });
             this._state = {
               loading: false,
-              items: Array.isArray(res.items) ? res.items : [],
+              items,
               error: null,
               needsSetup: false,
               updated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -116,18 +125,24 @@ class TwAddonApiMultiValue extends HTMLElement {
   render() {
     const title = typeof this._settings.title === 'string' ? this._settings.title.trim() : '';
     const showUpdated = this._settings.showUpdated !== false;
+    const positiveColour = this._settings.positiveColour || '#22c55e';
+    const negativeColour = this._settings.negativeColour || '#ef4444';
     const configured = this._getConfiguredItems();
     const st = this._state;
 
     const rowsHtml = configured.map((cfg, idx) => {
       const res = st.items && st.items[idx] ? st.items[idx] : null;
-      const label = escapeHtml(cfg.label || cfg.jsonPath || `Item ${idx + 1}`);
+      const label = escapeHtml(cfg.label || cfg.priceJson || `Item ${idx + 1}`);
       const logoUrl = cfg.logoUrl ? escapeHtml(cfg.logoUrl) : '';
 
       let rightHtml = '<span class="sub">...</span>';
       if (res) {
         if (res.error) {
           rightHtml = `<span class="err" title="${escapeHtml(res.error)}">${escapeHtml(res.error)}</span>`;
+        } else if (typeof res.change === 'number' && Number.isFinite(res.change) && res.changeDisplay != null) {
+          const colour = res.change < 0 ? negativeColour : positiveColour;
+          const display = `${res.value} (${res.changeDisplay}%)`;
+          rightHtml = `<span class="val" style="color: ${escapeHtml(colour)}">${escapeHtml(display)}</span>`;
         } else {
           rightHtml = `<span class="val">${escapeHtml(res.value)}</span>`;
         }

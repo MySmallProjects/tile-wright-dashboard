@@ -95,8 +95,17 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
             var results = new List<object>();
             foreach (var itemEl in itemsEl.EnumerateArray())
             {
-                var extracted = ExtractAndFormatItem(doc.RootElement, itemEl);
-                results.Add(new { value = extracted.Value, raw = extracted.Raw, error = extracted.Error });
+                var extracted = ExtractAndFormatItem(doc.RootElement, itemEl, "priceJson");
+                var change = ExtractChange(doc.RootElement, itemEl);
+                results.Add(new
+                {
+                    value = extracted.Value,
+                    raw = extracted.Raw,
+                    error = extracted.Error,
+                    change = change.Value,
+                    changeDisplay = change.Display,
+                    changeWarning = change.Warning
+                });
             }
             return new { items = results, cached, fetchedAt = DateTimeOffset.UtcNow };
         }
@@ -166,9 +175,12 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
         }
     }
 
-    private static (string? Value, string? Raw, string? Error) ExtractAndFormatItem(JsonElement root, JsonElement itemConfig)
+    private static (string? Value, string? Raw, string? Error) ExtractAndFormatItem(
+        JsonElement root,
+        JsonElement itemConfig,
+        string pathProp = "jsonPath")
     {
-        var jsonPath = GetString(itemConfig, "jsonPath");
+        var jsonPath = GetString(itemConfig, pathProp);
         var extracted = JsonPathExtractor.Extract(root, jsonPath);
         if (extracted is null)
         {
@@ -192,6 +204,46 @@ public sealed class ApiValueAddonModule : IAddonModule, IActionHandler
         var display = FormatNumericValue(rawStr, numberFormat, decimals);
         return ($"{prefix}{display}{suffix}", rawStr, null);
     }
+
+    public static (double? Value, string? Display, string? Warning) ExtractChange(JsonElement root, JsonElement itemConfig)
+    {
+        var changePath = GetString(itemConfig, "changeJson")?.Trim();
+        if (string.IsNullOrWhiteSpace(changePath))
+        {
+            return (null, null, null);
+        }
+
+        var extracted = JsonPathExtractor.Extract(root, changePath);
+        if (extracted is null)
+        {
+            return (null, null, $"Change JSON path '{changePath}' not found (expected a numeric value, received: not found).");
+        }
+
+        var el = extracted.Value;
+        double num;
+        if (el.ValueKind == JsonValueKind.Number && el.TryGetDouble(out var parsedNum) && double.IsFinite(parsedNum))
+        {
+            num = parsedNum;
+        }
+        else if (el.ValueKind == JsonValueKind.String &&
+                 double.TryParse(el.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedStr) &&
+                 double.IsFinite(parsedStr))
+        {
+            num = parsedStr;
+        }
+        else
+        {
+            var received = el.ValueKind == JsonValueKind.String
+                ? $"\"{el.GetString()}\""
+                : el.GetRawText();
+            return (null, null, $"Change JSON path '{changePath}' is invalid (expected a numeric value, received: {received}).");
+        }
+
+        return (num, FormatChangeValue(num), null);
+    }
+
+    public static string FormatChangeValue(double change) =>
+        Math.Abs(change).ToString("0.#", CultureInfo.InvariantCulture);
 
     private static int? GetDecimals(JsonElement el)
     {
