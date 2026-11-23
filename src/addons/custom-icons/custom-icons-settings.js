@@ -53,6 +53,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
       uploadingScope: null,
       uploadProgress: null,
       deletingKey: null,
+      conflictMode: 'rename',
       site: [],
       user: [],
       isAdmin: false,
@@ -99,13 +100,24 @@ class TwAddonCustomIconsSettings extends HTMLElement {
     this.render();
   }
 
+  _formatNamePreview(names, max = 5) {
+    if (!names || names.length === 0) return '';
+    const shown = names.slice(0, max).join(', ');
+    return names.length > max ? `${shown} (+${names.length - max} more)` : shown;
+  }
+
   async handleUpload(scope, fileList) {
     const files = Array.from(fileList || []);
     if (files.length === 0 || !this._context?.invokeAction) return;
 
+    const conflictMode = this._state.conflictMode || 'rename';
     const batches = chunkFilesForUpload(files);
     let processed = 0;
     let uploadedCount = 0;
+    let addedCount = 0;
+    const renamed = [];
+    const overwritten = [];
+    const skipped = [];
     const errors = [];
 
     this._state = {
@@ -127,11 +139,15 @@ class TwAddonCustomIconsSettings extends HTMLElement {
             }))
           );
 
-          const res = await this._context.invokeAction('upload', { scope, files: encoded });
+          const res = await this._context.invokeAction('upload', { scope, conflictMode, files: encoded });
           if (res?.error) {
             errors.push(String(res.error));
           } else {
             if (Array.isArray(res?.uploaded)) uploadedCount += res.uploaded.length;
+            if (Array.isArray(res?.added)) addedCount += res.added.length;
+            if (Array.isArray(res?.renamed)) renamed.push(...res.renamed.map(String));
+            if (Array.isArray(res?.overwritten)) overwritten.push(...res.overwritten.map(String));
+            if (Array.isArray(res?.skipped)) skipped.push(...res.skipped.map(String));
             if (Array.isArray(res?.errors)) errors.push(...res.errors.map(String));
           }
         } catch (e) {
@@ -147,7 +163,27 @@ class TwAddonCustomIconsSettings extends HTMLElement {
         this.render();
       }
 
-      const status = uploadedCount > 0 ? `Uploaded ${uploadedCount} icon${uploadedCount === 1 ? '' : 's'}.` : '';
+      const details = [];
+      if (addedCount > 0 && (renamed.length > 0 || overwritten.length > 0 || skipped.length > 0)) {
+        details.push(`${addedCount} new`);
+      }
+      if (renamed.length > 0) details.push(`${renamed.length} renamed`);
+      if (overwritten.length > 0) details.push(`${overwritten.length} overwritten`);
+      if (skipped.length > 0) details.push(`${skipped.length} skipped`);
+
+      let toastSummary = '';
+      if (uploadedCount > 0) {
+        toastSummary = `Uploaded ${uploadedCount} icon${uploadedCount === 1 ? '' : 's'}${details.length > 0 ? ` (${details.join(', ')})` : ''}.`;
+      } else if (skipped.length > 0) {
+        toastSummary = `No icons uploaded (${skipped.length} duplicate${skipped.length === 1 ? '' : 's'} skipped).`;
+      }
+
+      const detailLines = [];
+      if (renamed.length > 0) detailLines.push(`Renamed: ${this._formatNamePreview(renamed)}`);
+      if (overwritten.length > 0) detailLines.push(`Overwritten: ${this._formatNamePreview(overwritten)}`);
+      if (skipped.length > 0) detailLines.push(`Skipped: ${this._formatNamePreview(skipped)}`);
+
+      const status = detailLines.length > 0 ? `${toastSummary} ${detailLines.join(' · ')}` : toastSummary;
       const errMsg = errors.length > 0 ? errors.join(' ') : '';
       this._state = {
         ...this._state,
@@ -156,8 +192,11 @@ class TwAddonCustomIconsSettings extends HTMLElement {
         status,
         error: errMsg
       };
+      if (toastSummary) {
+        const hasConflicts = renamed.length > 0 || overwritten.length > 0 || skipped.length > 0;
+        this._context.notify?.(toastSummary, hasConflicts ? 7000 : 4500);
+      }
       if (uploadedCount > 0) {
-        this._context.notify?.(status);
         await this._context.refreshAddons?.();
         await this.loadIcons();
         return;
@@ -221,6 +260,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
           }).join('')}
         </div>`;
 
+    const conflictMode = this._state.conflictMode || 'rename';
     return `
       <section class="section">
         <div class="sec-head">
@@ -229,10 +269,17 @@ class TwAddonCustomIconsSettings extends HTMLElement {
             <p class="muted">${subtitle}</p>
           </div>
           ${canEdit
-            ? `<label class="upload-btn ${busy ? 'disabled' : ''}">
-                 <span>${uploadLabel}</span>
-                 <input type="file" multiple accept=".png,.svg,.webp,.jpg,.jpeg,.gif,.ico,image/*" data-upload-scope="${scope}" ${busy ? 'disabled' : ''} />
-               </label>`
+            ? `<div class="sec-actions">
+                 <select class="conflict-select" data-conflict-select aria-label="Duplicate filename handling" title="How to handle duplicate filenames" ${busy ? 'disabled' : ''}>
+                   <option value="rename" ${conflictMode === 'rename' ? 'selected' : ''}>Duplicates: Rename</option>
+                   <option value="overwrite" ${conflictMode === 'overwrite' ? 'selected' : ''}>Duplicates: Overwrite</option>
+                   <option value="skip" ${conflictMode === 'skip' ? 'selected' : ''}>Duplicates: Skip</option>
+                 </select>
+                 <label class="upload-btn ${busy ? 'disabled' : ''}">
+                   <span>${uploadLabel}</span>
+                   <input type="file" multiple accept=".png,.svg,.webp,.jpg,.jpeg,.gif,.ico,image/*" data-upload-scope="${scope}" ${busy ? 'disabled' : ''} />
+                 </label>
+               </div>`
             : ''}
         </div>
         ${cards}
@@ -258,6 +305,16 @@ class TwAddonCustomIconsSettings extends HTMLElement {
           display: flex; align-items: flex-start; justify-content: space-between;
           gap: 12px; flex-wrap: wrap;
         }
+        .sec-actions {
+          display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .conflict-select {
+          min-height: 36px; padding: 0 10px; border-radius: 8px;
+          background: var(--tw-surface-solid); color: var(--tw-text);
+          border: 1px solid var(--tw-border); font-size: 0.82rem; font-family: inherit;
+          cursor: pointer;
+        }
+        .conflict-select:disabled { opacity: 0.6; cursor: default; }
         h3 { margin: 0; font-size: 0.96rem; }
         .count { font-weight: 400; color: var(--tw-text-muted); font-size: 0.85rem; }
         .muted { margin: 2px 0 0; font-size: 0.8rem; color: var(--tw-text-muted); }
@@ -330,6 +387,17 @@ class TwAddonCustomIconsSettings extends HTMLElement {
           `}
       </div>
     `;
+
+    this.shadowRoot.querySelectorAll('select[data-conflict-select]').forEach((sel) => {
+      sel.addEventListener('change', (e) => {
+        const val = e.currentTarget.value;
+        this._state = {
+          ...this._state,
+          conflictMode: val === 'overwrite' || val === 'skip' ? val : 'rename'
+        };
+        this.render();
+      });
+    });
 
     this.shadowRoot.querySelectorAll('input[data-upload-scope]').forEach((input) => {
       input.addEventListener('change', (e) => {

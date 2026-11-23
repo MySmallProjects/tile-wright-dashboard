@@ -77,12 +77,16 @@
   let toastTimer: number | null = null;
   let swipeStart: { x: number; y: number; time: number } | null = null;
 
-  function notify(msg: string) {
+  function notify(msg: string, durationMs?: number) {
     toastMsg = msg;
     if (toastTimer !== null) clearTimeout(toastTimer);
+    const delay =
+      typeof durationMs === 'number' && durationMs > 0
+        ? durationMs
+        : Math.min(9000, Math.max(4000, msg.length * 65));
     toastTimer = window.setTimeout(() => {
       toastMsg = '';
-    }, 2400);
+    }, delay);
   }
 
   let effectiveBg = $derived(

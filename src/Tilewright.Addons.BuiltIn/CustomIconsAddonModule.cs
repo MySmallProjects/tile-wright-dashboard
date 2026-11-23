@@ -121,6 +121,9 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
             return new { error = "Admin role required to upload Site Icons." };
         }
 
+        var rawConflictMode = (GetString(payload.Value, "conflictMode") ?? "rename").Trim().ToLowerInvariant();
+        var conflictMode = rawConflictMode is "overwrite" or "skip" ? rawConflictMode : "rename";
+
         if (!payload.Value.TryGetProperty("files", out var filesEl) || filesEl.ValueKind != JsonValueKind.Array)
         {
             return new { error = "No files provided." };
@@ -132,6 +135,10 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
         Directory.CreateDirectory(targetDir);
 
         var uploaded = new List<string>();
+        var added = new List<string>();
+        var renamed = new List<string>();
+        var overwritten = new List<string>();
+        var skipped = new List<string>();
         var errors = new List<string>();
 
         foreach (var fileEl in filesEl.EnumerateArray())
@@ -176,10 +183,46 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
 
             var fileName = $"{stem}{ext}";
             var fullPath = Path.Combine(targetDir, fileName);
+            var exists = File.Exists(fullPath);
+
+            if (exists && conflictMode == "skip")
+            {
+                skipped.Add(fileName);
+                continue;
+            }
+
+            var wasRenamed = false;
+            var wasOverwritten = false;
+            if (exists)
+            {
+                if (conflictMode == "overwrite")
+                {
+                    wasOverwritten = true;
+                }
+                else
+                {
+                    fileName = GetUniqueFileName(targetDir, stem, ext);
+                    fullPath = Path.Combine(targetDir, fileName);
+                    wasRenamed = true;
+                }
+            }
+
             try
             {
                 File.WriteAllBytes(fullPath, bytes);
                 uploaded.Add(fileName);
+                if (wasOverwritten)
+                {
+                    overwritten.Add(fileName);
+                }
+                else if (wasRenamed)
+                {
+                    renamed.Add(fileName);
+                }
+                else
+                {
+                    added.Add(fileName);
+                }
             }
             catch (Exception ex)
             {
@@ -188,7 +231,31 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
             }
         }
 
-        return new { ok = uploaded.Count > 0, uploaded, errors };
+        return new { ok = uploaded.Count > 0, uploaded, added, renamed, overwritten, skipped, errors };
+    }
+
+    private static string GetUniqueFileName(string targetDir, string stem, string ext)
+    {
+        var candidate = $"{stem}{ext}";
+        if (!File.Exists(Path.Combine(targetDir, candidate)))
+        {
+            return candidate;
+        }
+
+        for (var suffix = 2; suffix < 10_000; suffix++)
+        {
+            var suffixStr = $"-{suffix}";
+            var maxStemLen = Math.Max(1, 60 - suffixStr.Length);
+            var trimmedStem = stem.Length > maxStemLen ? stem[..maxStemLen].TrimEnd('-') : stem;
+            if (string.IsNullOrEmpty(trimmedStem)) trimmedStem = "icon";
+            candidate = $"{trimmedStem}{suffixStr}{ext}";
+            if (!File.Exists(Path.Combine(targetDir, candidate)))
+            {
+                return candidate;
+            }
+        }
+
+        return $"icon-{Guid.NewGuid():N}"[..13] + ext;
     }
 
     private static object? HandleDelete(JsonElement? payload, AddonUserContext user, IAddonHostContext host)

@@ -271,6 +271,68 @@ public sealed class AddonFrameworkTests : IDisposable
         Assert.Equal(25, sitePack.Icons.Count);
     }
 
+    [Fact]
+    public async Task CustomIcons_ConflictModes_RenameOverwriteAndSkip()
+    {
+        var dataFolder = Path.Combine(_dataRoot, "custom-icons-conflicts");
+        var module = new Tilewright.Addons.BuiltIn.CustomIconsAddonModule();
+        var user = new Tilewright.AddonContracts.AddonUserContext("user1", IsAdmin: true);
+        var host = new StubAddonHostContext("custom-icons", dataFolder, user);
+        await module.InitializeAsync(host);
+
+        var svgV1 = "<svg xmlns=\"http://www.w3.org/2000/svg\"><circle r=\"1\"/></svg>";
+        var svgV2 = "<svg xmlns=\"http://www.w3.org/2000/svg\"><circle r=\"2\"/></svg>";
+        var b64V1 = "data:image/svg+xml;base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(svgV1));
+        var b64V2 = "data:image/svg+xml;base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(svgV2));
+
+        // 1. Initial upload -> added
+        var r1 = JsonSerializer.SerializeToElement(await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            files = new[] { new { fileName = "icon-1.svg", dataBase64 = b64V1 } }
+        }), host));
+        Assert.Equal(1, r1.GetProperty("added").GetArrayLength());
+        Assert.Equal(0, r1.GetProperty("renamed").GetArrayLength());
+        Assert.Equal(0, r1.GetProperty("overwritten").GetArrayLength());
+        Assert.Equal(0, r1.GetProperty("skipped").GetArrayLength());
+
+        // 2. Duplicate upload with default conflictMode (rename) -> icon-1-2.svg
+        var r2 = JsonSerializer.SerializeToElement(await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            files = new[] { new { fileName = "icon-1.svg", dataBase64 = b64V2 } }
+        }), host));
+        Assert.Equal(0, r2.GetProperty("added").GetArrayLength());
+        Assert.Equal(1, r2.GetProperty("renamed").GetArrayLength());
+        Assert.Equal("icon-1-2.svg", r2.GetProperty("renamed")[0].GetString());
+
+        // 3. Duplicate upload with conflictMode = skip -> skipped, count unchanged
+        var r3 = JsonSerializer.SerializeToElement(await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            conflictMode = "skip",
+            files = new[] { new { fileName = "icon-1.svg", dataBase64 = b64V2 } }
+        }), host));
+        Assert.Equal(0, r3.GetProperty("uploaded").GetArrayLength());
+        Assert.Equal(1, r3.GetProperty("skipped").GetArrayLength());
+        Assert.Equal("icon-1.svg", r3.GetProperty("skipped")[0].GetString());
+
+        // 4. Duplicate upload with conflictMode = overwrite -> overwrites icon-1.svg
+        var r4 = JsonSerializer.SerializeToElement(await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            conflictMode = "overwrite",
+            files = new[] { new { fileName = "icon-1.svg", dataBase64 = b64V2 } }
+        }), host));
+        Assert.Equal(1, r4.GetProperty("overwritten").GetArrayLength());
+        Assert.Equal("icon-1.svg", r4.GetProperty("overwritten")[0].GetString());
+
+        var listEl = JsonSerializer.SerializeToElement(await module.HandleActionAsync("list", null, host));
+        Assert.Equal(2, listEl.GetProperty("user").GetArrayLength());
+        var savedContent = await File.ReadAllTextAsync(Path.Combine(dataFolder, "users", "user1", "icon-1.svg"));
+        Assert.Equal(svgV2, savedContent);
+    }
+
     private sealed class StubAddonHostContext(
         string addonId,
         string dataFolder,

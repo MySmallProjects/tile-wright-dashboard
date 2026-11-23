@@ -40,7 +40,7 @@
     onUserSettingsSaved: (s: UserSettings) => void;
     onSiteSettingsSaved: (s: SiteSettings) => void;
     onRefreshAddons: () => Promise<void>;
-    onNotify: (msg: string) => void;
+    onNotify: (msg: string, durationMs?: number) => void;
   } = $props();
 
   type TabId = 'appearance' | 'account' | 'site' | 'addons' | 'backup' | 'about' | `addon:${string}`;
