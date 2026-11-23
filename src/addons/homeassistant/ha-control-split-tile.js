@@ -129,7 +129,7 @@ class TwAddonHaControlSplit extends HTMLElement {
   }
 
   triggerToggle() {
-    if (!this.entityId || this._state.toggling) return;
+    if (this._settings.readOnly || !this.entityId || this._state.toggling) return;
     this._state = { ...this._state, toggling: true, error: null };
     this.render();
 
@@ -202,8 +202,23 @@ class TwAddonHaControlSplit extends HTMLElement {
         : `Updated ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
     }
 
+    const readOnly = Boolean(this._settings.readOnly);
     const hasBottomRow = Boolean(labelText || updatedText || st.error);
     const ariaLabel = labelOverride || st.friendlyName || this.entityId || 'HA Control';
+
+    const innerMarkup = `
+      <div class="split-top">
+        <div class="col-device">${deviceIconHtml}</div>
+        <div class="col-status ${isOn ? 'is-on' : ''} ${st.toggling ? 'is-toggling' : ''}">${statusIconHtml}</div>
+      </div>
+      ${hasBottomRow ? `
+        <div class="split-bottom">
+          ${labelText ? `<div class="label">${escapeHtml(labelText)}</div>` : ''}
+          ${updatedText ? `<div class="updated">${escapeHtml(updatedText)}</div>` : ''}
+          ${st.error ? `<div class="err">${escapeHtml(st.error)}</div>` : ''}
+        </div>
+      ` : ''}
+    `;
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -218,12 +233,25 @@ class TwAddonHaControlSplit extends HTMLElement {
           font-size: 0.84rem; color: var(--tw-text-muted);
           display: flex; flex-direction: column; justify-content: center;
         }
-        button.tile-btn {
+        .tile-btn {
           position: absolute; inset: 0; width: 100%; height: 100%;
           border: none; background: transparent; color: inherit; font-family: inherit;
           padding: 8px 12px; gap: 6px; overflow: hidden;
           display: flex; flex-direction: column;
           cursor: pointer; touch-action: manipulation;
+        }
+        .tile-btn.is-readonly {
+          cursor: default;
+        }
+        .readonly-badge {
+          position: absolute; top: 5px; right: 6px;
+          width: 12px; height: 12px;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--tw-text-muted); opacity: 0.65;
+          pointer-events: none;
+        }
+        .readonly-badge svg {
+          width: 12px; height: 12px; display: block;
         }
         .split-top {
           flex: 1 1 0; min-height: 0; width: 100%;
@@ -283,19 +311,14 @@ class TwAddonHaControlSplit extends HTMLElement {
       </style>
       ${st.needsSetup
         ? `<div class="setup"><strong>Needs setup</strong><span>${escapeHtml(st.error || 'Select a Home Assistant entity.')}</span></div>`
-        : `<button type="button" class="tile-btn" aria-label="${escapeHtml(ariaLabel)}" ${st.toggling ? 'disabled' : ''}>
-             <div class="split-top">
-               <div class="col-device">${deviceIconHtml}</div>
-               <div class="col-status ${isOn ? 'is-on' : ''} ${st.toggling ? 'is-toggling' : ''}">${statusIconHtml}</div>
-             </div>
-             ${hasBottomRow ? `
-               <div class="split-bottom">
-                 ${labelText ? `<div class="label">${escapeHtml(labelText)}</div>` : ''}
-                 ${updatedText ? `<div class="updated">${escapeHtml(updatedText)}</div>` : ''}
-                 ${st.error ? `<div class="err">${escapeHtml(st.error)}</div>` : ''}
-               </div>
-             ` : ''}
-           </button>`}
+        : readOnly
+          ? `<div class="tile-btn is-readonly" aria-label="${escapeHtml(ariaLabel)}" title="Read-only">
+               <span class="readonly-badge" aria-hidden="true">
+                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2zm-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3"/></svg>
+               </span>
+               ${innerMarkup}
+             </div>`
+          : `<button type="button" class="tile-btn" aria-label="${escapeHtml(ariaLabel)}" ${st.toggling ? 'disabled' : ''}>${innerMarkup}</button>`}
     `;
 
     const btn = this.shadowRoot.querySelector('button.tile-btn');

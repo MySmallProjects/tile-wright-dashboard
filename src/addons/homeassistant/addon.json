@@ -288,6 +288,13 @@
             "label": "Show last updated time",
             "type": "toggle",
             "defaultValue": false
+          },
+          {
+            "key": "readOnly",
+            "label": "ReadOnly",
+            "type": "toggle",
+            "defaultValue": false,
+            "helpText": "Display status only; disables clicking to control the entity."
           }
         ]
       }

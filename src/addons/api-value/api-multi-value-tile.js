@@ -81,14 +81,18 @@ class TwAddonApiMultiValue extends HTMLElement {
         payload: {
           apiUrl: this._settings.apiUrl,
           refreshInterval: this._settings.refreshInterval || '2h',
-          items: configured.map((item) => ({
-            priceJson: item.priceJson || '',
-            changeJson: item.changeJson || '',
-            prefix: item.prefix || '',
-            suffix: item.suffix || '',
-            numberFormat: item.numberFormat || '',
-            decimals: item.decimals !== '' && item.decimals != null ? Number(item.decimals) : null
-          }))
+          items: configured.map((item) => {
+            const rawDec = item.decimals == null ? '' : String(item.decimals).trim();
+            const parsedDec = rawDec !== '' ? Number(rawDec) : null;
+            return {
+              priceJson: item.priceJson || '',
+              changeJson: item.changeJson || '',
+              prefix: item.prefix || '',
+              suffix: item.suffix || '',
+              numberFormat: item.numberFormat || '',
+              decimals: parsedDec !== null && Number.isFinite(parsedDec) ? parsedDec : null
+            };
+          })
         },
         onResult: (res) => {
           if (!res) {

@@ -72,7 +72,7 @@
               { "key": "changeJson", "label": "Change JSON", "type": "text" },
               { "key": "prefix", "label": "Prefix", "type": "text" },
               { "key": "suffix", "label": "Suffix", "type": "text" },
-              { "key": "numberFormat", "label": "Number format (.NET)", "type": "text" },
+              { "key": "numberFormat", "label": "Number format (.NET, overrides Decimals)", "type": "text" },
               { "key": "decimals", "label": "Decimals", "type": "number" },
               { "key": "logoUrl", "label": "Logo URL", "type": "url" }
             ]
