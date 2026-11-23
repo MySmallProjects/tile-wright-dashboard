@@ -11,6 +11,7 @@
     alt=""
     width={size}
     height={size}
+    loading="lazy"
     aria-hidden="true"
     style="flex-shrink: 0; display: inline-block; object-fit: contain;"
   />

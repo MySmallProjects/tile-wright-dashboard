@@ -24,9 +24,9 @@
     packId: 'mdi'
   }));
 
-  const addonPacks = getAddonIconPacks();
+  let addonPacks = $state(getAddonIconPacks());
 
-  const allItems = [
+  let allItems = $derived([
     ...mdiIcons,
     ...addonPacks.flatMap((p) =>
       p.icons.map((ic) => ({
@@ -35,7 +35,7 @@
         packId: p.packId
       }))
     )
-  ];
+  ]);
 
   let selectedItem = $derived(
     value ? allItems.find((item) => item.refId === value) : undefined
@@ -57,6 +57,7 @@
   );
 
   async function openPicker() {
+    addonPacks = getAddonIconPacks();
     open = true;
     await tick();
     searchInput?.focus();
@@ -315,6 +316,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    min-height: 0;
+    flex: 1;
     overflow: hidden;
   }
   .picker-top input {
@@ -340,8 +343,10 @@
   .icon-grid {
     display: flex;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 6px;
     max-height: 320px;
+    min-height: 0;
     overflow-y: auto;
     padding: 2px;
   }

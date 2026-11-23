@@ -15,6 +15,34 @@ function readFileAsDataUrl(file) {
   });
 }
 
+const MAX_BATCH_RAW_BYTES = 512 * 1024; // ~685 KB base64 JSON per request (stays under proxy/server limits)
+const MAX_BATCH_FILES = 10;
+
+function chunkFilesForUpload(files) {
+  const batches = [];
+  let current = [];
+  let currentBytes = 0;
+
+  for (const f of files) {
+    const size = typeof f.size === 'number' ? f.size : 0;
+    if (
+      current.length > 0 &&
+      (current.length >= MAX_BATCH_FILES || currentBytes + size > MAX_BATCH_RAW_BYTES)
+    ) {
+      batches.push(current);
+      current = [];
+      currentBytes = 0;
+    }
+    current.push(f);
+    currentBytes += size;
+  }
+
+  if (current.length > 0) {
+    batches.push(current);
+  }
+  return batches;
+}
+
 class TwAddonCustomIconsSettings extends HTMLElement {
   constructor() {
     super();
@@ -23,6 +51,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
     this._state = {
       loading: true,
       uploadingScope: null,
+      uploadProgress: null,
       deletingKey: null,
       site: [],
       user: [],
@@ -74,30 +103,62 @@ class TwAddonCustomIconsSettings extends HTMLElement {
     const files = Array.from(fileList || []);
     if (files.length === 0 || !this._context?.invokeAction) return;
 
-    this._state = { ...this._state, uploadingScope: scope, error: '', status: '' };
+    const batches = chunkFilesForUpload(files);
+    let processed = 0;
+    let uploadedCount = 0;
+    const errors = [];
+
+    this._state = {
+      ...this._state,
+      uploadingScope: scope,
+      uploadProgress: { done: 0, total: files.length },
+      error: '',
+      status: ''
+    };
     this.render();
 
     try {
-      const encoded = await Promise.all(
-        files.map(async (f) => ({
-          fileName: f.name,
-          dataBase64: await readFileAsDataUrl(f)
-        }))
-      );
+      for (const batch of batches) {
+        try {
+          const encoded = await Promise.all(
+            batch.map(async (f) => ({
+              fileName: f.name,
+              dataBase64: await readFileAsDataUrl(f)
+            }))
+          );
 
-      const res = await this._context.invokeAction('upload', { scope, files: encoded });
-      if (res?.error) {
-        this._state = { ...this._state, uploadingScope: null, error: String(res.error) };
-      } else {
-        const uploadedCount = Array.isArray(res?.uploaded) ? res.uploaded.length : 0;
-        const errs = Array.isArray(res?.errors) ? res.errors : [];
-        const status = uploadedCount > 0 ? `Uploaded ${uploadedCount} icon${uploadedCount === 1 ? '' : 's'}.` : '';
-        const errMsg = errs.length > 0 ? errs.join(' ') : '';
-        this._state = { ...this._state, uploadingScope: null, status, error: errMsg };
-        if (uploadedCount > 0) {
-          this._context.notify?.(status);
-          await this._context.refreshAddons?.();
+          const res = await this._context.invokeAction('upload', { scope, files: encoded });
+          if (res?.error) {
+            errors.push(String(res.error));
+          } else {
+            if (Array.isArray(res?.uploaded)) uploadedCount += res.uploaded.length;
+            if (Array.isArray(res?.errors)) errors.push(...res.errors.map(String));
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Upload batch failed.';
+          errors.push(msg);
         }
+
+        processed += batch.length;
+        this._state = {
+          ...this._state,
+          uploadProgress: { done: processed, total: files.length }
+        };
+        this.render();
+      }
+
+      const status = uploadedCount > 0 ? `Uploaded ${uploadedCount} icon${uploadedCount === 1 ? '' : 's'}.` : '';
+      const errMsg = errors.length > 0 ? errors.join(' ') : '';
+      this._state = {
+        ...this._state,
+        uploadingScope: null,
+        uploadProgress: null,
+        status,
+        error: errMsg
+      };
+      if (uploadedCount > 0) {
+        this._context.notify?.(status);
+        await this._context.refreshAddons?.();
         await this.loadIcons();
         return;
       }
@@ -105,6 +166,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
       this._state = {
         ...this._state,
         uploadingScope: null,
+        uploadProgress: null,
         error: e instanceof Error ? e.message : 'Upload failed.'
       };
     }
@@ -137,6 +199,10 @@ class TwAddonCustomIconsSettings extends HTMLElement {
 
   _renderSection(scope, title, subtitle, items, canEdit) {
     const busy = this._state.uploadingScope === scope;
+    const progress = busy ? this._state.uploadProgress : null;
+    const uploadLabel = busy
+      ? (progress && progress.total > 1 ? `Uploading ${progress.done}/${progress.total}...` : 'Uploading...')
+      : '+ Upload Icons';
     const cards = items.length === 0
       ? `<div class="empty">No icons uploaded yet.</div>`
       : `<div class="grid">
@@ -145,7 +211,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
             const isDeleting = this._state.deletingKey === delKey;
             return `
               <div class="icon-card" title="${escapeHtml(ic.fileName)}">
-                <img src="${escapeHtml(ic.url)}" alt="${escapeHtml(ic.label)}" />
+                <img src="${escapeHtml(ic.url)}" alt="${escapeHtml(ic.label)}" loading="lazy" />
                 <span class="name">${escapeHtml(ic.label)}</span>
                 ${canEdit
                   ? `<button type="button" class="del-btn" data-scope="${scope}" data-file="${escapeHtml(ic.fileName)}" ${isDeleting ? 'disabled' : ''} title="Delete icon" aria-label="Delete ${escapeHtml(ic.label)}">✕</button>`
@@ -159,12 +225,12 @@ class TwAddonCustomIconsSettings extends HTMLElement {
       <section class="section">
         <div class="sec-head">
           <div>
-            <h3>${title}</h3>
+            <h3>${title} <span class="count">(${items.length})</span></h3>
             <p class="muted">${subtitle}</p>
           </div>
           ${canEdit
             ? `<label class="upload-btn ${busy ? 'disabled' : ''}">
-                 <span>${busy ? 'Uploading...' : '+ Upload Icons'}</span>
+                 <span>${uploadLabel}</span>
                  <input type="file" multiple accept=".png,.svg,.webp,.jpg,.jpeg,.gif,.ico,image/*" data-upload-scope="${scope}" ${busy ? 'disabled' : ''} />
                </label>`
             : ''}
@@ -193,6 +259,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
           gap: 12px; flex-wrap: wrap;
         }
         h3 { margin: 0; font-size: 0.96rem; }
+        .count { font-weight: 400; color: var(--tw-text-muted); font-size: 0.85rem; }
         .muted { margin: 2px 0 0; font-size: 0.8rem; color: var(--tw-text-muted); }
         .upload-btn {
           display: inline-flex; align-items: center; justify-content: center;
@@ -205,6 +272,9 @@ class TwAddonCustomIconsSettings extends HTMLElement {
         .grid {
           display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
           gap: 8px;
+          max-height: 340px;
+          overflow-y: auto;
+          padding-right: 4px;
         }
         .icon-card {
           position: relative;

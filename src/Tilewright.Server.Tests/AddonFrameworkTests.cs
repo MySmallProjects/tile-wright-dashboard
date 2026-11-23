@@ -227,6 +227,65 @@ public sealed class AddonFrameworkTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(broken.Error));
     }
 
+    [Fact]
+    public async Task CustomIcons_SupportsUploadingMoreThanTwentyIconsPerScope()
+    {
+        var dataFolder = Path.Combine(_dataRoot, "custom-icons");
+        var module = new Tilewright.Addons.BuiltIn.CustomIconsAddonModule();
+        var user = new Tilewright.AddonContracts.AddonUserContext("user1", IsAdmin: true);
+        var host = new StubAddonHostContext("custom-icons", dataFolder, user);
+        await module.InitializeAsync(host);
+
+        var svgBase64 = "data:image/svg+xml;base64," + Convert.ToBase64String(
+            Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg>"));
+
+        var userPayload = JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            files = Enumerable.Range(1, 30)
+                .Select(i => new { fileName = $"my-icon-{i:D2}.svg", dataBase64 = svgBase64 })
+                .ToArray()
+        });
+        var sitePayload = JsonSerializer.SerializeToElement(new
+        {
+            scope = "site",
+            files = Enumerable.Range(1, 25)
+                .Select(i => new { fileName = $"site-icon-{i:D2}.svg", dataBase64 = svgBase64 })
+                .ToArray()
+        });
+
+        await module.HandleActionAsync("upload", userPayload, host);
+        await module.HandleActionAsync("upload", sitePayload, host);
+
+        var listObj = await module.HandleActionAsync("list", null, host);
+        var listEl = JsonSerializer.SerializeToElement(listObj);
+        Assert.Equal(30, listEl.GetProperty("user").GetArrayLength());
+        Assert.Equal(25, listEl.GetProperty("site").GetArrayLength());
+
+        var packs = await module.GetIconPacksAsync(user, host);
+        var myPack = packs.FirstOrDefault(p => p.PackId == "custom-user");
+        var sitePack = packs.FirstOrDefault(p => p.PackId == "custom-site");
+        Assert.NotNull(myPack);
+        Assert.NotNull(sitePack);
+        Assert.Equal(30, myPack.Icons.Count);
+        Assert.Equal(25, sitePack.Icons.Count);
+    }
+
+    private sealed class StubAddonHostContext(
+        string addonId,
+        string dataFolder,
+        Tilewright.AddonContracts.AddonUserContext? currentUser) : Tilewright.AddonContracts.IAddonHostContext
+    {
+        public string AddonId { get; } = addonId;
+        public string DataFolder { get; } = dataFolder;
+        public Tilewright.AddonContracts.IAddonHttpClientFactory Http => throw new NotImplementedException();
+        public Tilewright.AddonContracts.IAddonSecretStore Secrets => throw new NotImplementedException();
+        public Tilewright.AddonContracts.IAddonSettingsReader Settings => throw new NotImplementedException();
+        public Tilewright.AddonContracts.IAddonPushService Push => throw new NotImplementedException();
+        public Microsoft.Extensions.Logging.ILogger Logger { get; } = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+        public Tilewright.AddonContracts.AddonUserContext? CurrentUser { get; } = currentUser;
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_dataRoot))
