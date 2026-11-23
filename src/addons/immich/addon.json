@@ -1,0 +1,197 @@
+{
+  "id": "immich",
+  "name": "Immich Photos",
+  "version": "1.0.0",
+  "description": "Displays random photos from an Immich instance at regular intervals with filters, crossfades, and photo details.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "server": {
+      "assembly": "Tilewright.Addons.BuiltIn.dll",
+      "entryType": "Tilewright.Addons.BuiltIn.ImmichAddonModule"
+    },
+    "addonSettingsSchema": [
+      {
+        "key": "baseUrl",
+        "label": "Immich Base URL",
+        "type": "url",
+        "required": false,
+        "helpText": "e.g. http://immich.local:2283 or https://photos.home.lan"
+      },
+      {
+        "key": "apiKey",
+        "label": "Immich API Key",
+        "type": "secret",
+        "required": false,
+        "helpText": "Created in Immich Account Settings → API Keys (requires asset.read, asset.view; optionally album.read, person.read, tag.read). Stored write-only on the server."
+      },
+      {
+        "key": "ignoreSslErrors",
+        "label": "Allow self-signed SSL certificates",
+        "type": "toggle",
+        "defaultValue": false,
+        "helpText": "Enable if your Immich instance uses HTTPS with a self-signed or local CA certificate."
+      }
+    ],
+    "tiles": [
+      {
+        "id": "random-photo",
+        "name": "Immich Photo Frame",
+        "description": "Shows random photos from Immich on a timer with optional filters, overlay info, and details popup.",
+        "icon": "image",
+        "element": {
+          "tagName": "tw-addon-immich",
+          "script": "immich-tile.js"
+        },
+        "defaultSize": { "w": 6, "h": 4 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 16, "h": 12 },
+        "settingsSchema": [
+          {
+            "key": "refreshInterval",
+            "label": "Refresh interval",
+            "type": "duration",
+            "defaultValue": "5m",
+            "helpText": "How often to show a new random photo (e.g. 30s, 5m, 1h)."
+          },
+          {
+            "key": "imageSize",
+            "label": "Image size",
+            "type": "select",
+            "defaultValue": "thumbnail",
+            "options": [
+              { "value": "thumbnail", "label": "Thumbnail (small, fast — best for ~320px tiles)" },
+              { "value": "preview", "label": "Preview (medium — sharper for large tiles)" },
+              { "value": "fullsize", "label": "Full size (original)" }
+            ]
+          },
+          {
+            "key": "fit",
+            "label": "Image fit",
+            "type": "select",
+            "defaultValue": "cover",
+            "options": [
+              { "value": "cover", "label": "Cover (fill tile)" },
+              { "value": "contain", "label": "Contain (show full image)" },
+              { "value": "contain-blur", "label": "Contain + blurred backdrop" }
+            ]
+          },
+          {
+            "key": "matchOrientation",
+            "label": "Match tile orientation",
+            "type": "toggle",
+            "defaultValue": false,
+            "helpText": "Prefer landscape photos for wide tiles and portrait photos for tall tiles."
+          },
+          {
+            "key": "crossfade",
+            "label": "Smooth crossfade",
+            "type": "toggle",
+            "defaultValue": true,
+            "helpText": "Fade smoothly between photos instead of switching abruptly."
+          },
+          {
+            "key": "tapToAdvance",
+            "label": "Tap tile for next photo",
+            "type": "toggle",
+            "defaultValue": true,
+            "helpText": "Click or tap the photo to immediately skip to another random image."
+          },
+          {
+            "key": "overlayInfo",
+            "label": "Bottom info overlay",
+            "type": "select",
+            "defaultValue": "none",
+            "options": [
+              { "value": "none", "label": "None" },
+              { "value": "date", "label": "Date taken" },
+              { "value": "date-time", "label": "Date & time taken" },
+              { "value": "location", "label": "Location (City, Country)" },
+              { "value": "date-location", "label": "Date & Location" },
+              { "value": "filename", "label": "Filename" },
+              { "value": "people", "label": "People" }
+            ],
+            "helpText": "Optional single-line caption along the bottom edge of the tile."
+          },
+          {
+            "key": "showInfoButton",
+            "label": "Show info button",
+            "type": "toggle",
+            "defaultValue": true,
+            "helpText": "Displays an info (i) button in the top-right corner to view photo details and open in Immich."
+          },
+          {
+            "key": "albumId",
+            "label": "Filter: Album (optional)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "albums",
+            "helpText": "Populated from Immich once URL and API key are configured in Settings → Addons."
+          },
+          {
+            "key": "personId",
+            "label": "Filter: Person (optional)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "people"
+          },
+          {
+            "key": "tagId",
+            "label": "Filter: Tag (optional)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "tags"
+          },
+          {
+            "key": "favoritesOnly",
+            "label": "Filter: Favorites only",
+            "type": "toggle",
+            "defaultValue": false
+          },
+          {
+            "key": "takenAfter",
+            "label": "Filter: Taken after (optional)",
+            "type": "text",
+            "helpText": "YYYY-MM-DD or ISO-8601 date (e.g. 2023-01-01)."
+          },
+          {
+            "key": "takenBefore",
+            "label": "Filter: Taken before (optional)",
+            "type": "text",
+            "helpText": "YYYY-MM-DD or ISO-8601 date (e.g. 2025-12-31)."
+          },
+          {
+            "key": "city",
+            "label": "Filter: City (optional)",
+            "type": "text"
+          },
+          {
+            "key": "state",
+            "label": "Filter: State / Region (optional)",
+            "type": "text"
+          },
+          {
+            "key": "country",
+            "label": "Filter: Country (optional)",
+            "type": "text"
+          },
+          {
+            "key": "rating",
+            "label": "Filter: Rating (optional)",
+            "type": "select",
+            "options": [
+              { "value": "1", "label": "1 star" },
+              { "value": "2", "label": "2 stars" },
+              { "value": "3", "label": "3 stars" },
+              { "value": "4", "label": "4 stars" },
+              { "value": "5", "label": "5 stars" }
+            ]
+          },
+          {
+            "key": "extraFiltersJson",
+            "label": "Filter: Extra Immich JSON (optional)",
+            "type": "multiline",
+            "helpText": "Advanced: JSON object merged into POST /api/search/random body, e.g. {\"make\":\"Canon\",\"isNotInAlbum\":true}"
+          }
+        ]
+      }
+    ]
+  }
+}
