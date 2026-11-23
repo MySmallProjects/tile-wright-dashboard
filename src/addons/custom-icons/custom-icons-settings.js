@@ -53,6 +53,7 @@ class TwAddonCustomIconsSettings extends HTMLElement {
       uploadingScope: null,
       uploadProgress: null,
       deletingKey: null,
+      deletingAllScope: null,
       conflictMode: 'rename',
       site: [],
       user: [],
@@ -236,10 +237,49 @@ class TwAddonCustomIconsSettings extends HTMLElement {
     this.render();
   }
 
+  async handleDeleteAll(scope, title, count) {
+    if (!this._context?.invokeAction || count <= 0) return;
+    const confirmed = window.confirm(
+      `Delete all ${count} icon${count === 1 ? '' : 's'} in "${title}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    this._state = { ...this._state, deletingAllScope: scope, error: '', status: '' };
+    this.render();
+    try {
+      const res = await this._context.invokeAction('delete-all', { scope });
+      if (res?.error) {
+        this._state = { ...this._state, deletingAllScope: null, error: String(res.error) };
+      } else {
+        const deletedCount = typeof res?.deleted === 'number' ? res.deleted : count;
+        const errs = Array.isArray(res?.errors) ? res.errors.map(String) : [];
+        const status = `Deleted ${deletedCount} icon${deletedCount === 1 ? '' : 's'} from ${title}.`;
+        this._state = {
+          ...this._state,
+          deletingAllScope: null,
+          status,
+          error: errs.length > 0 ? errs.join(' ') : ''
+        };
+        this._context.notify?.(status, 4500);
+        await this._context.refreshAddons?.();
+        await this.loadIcons();
+        return;
+      }
+    } catch (e) {
+      this._state = {
+        ...this._state,
+        deletingAllScope: null,
+        error: e instanceof Error ? e.message : 'Delete all failed.'
+      };
+    }
+    this.render();
+  }
+
   _renderSection(scope, title, subtitle, items, canEdit) {
-    const busy = this._state.uploadingScope === scope;
-    const progress = busy ? this._state.uploadProgress : null;
-    const uploadLabel = busy
+    const busy = this._state.uploadingScope === scope || this._state.deletingAllScope === scope;
+    const deletingAll = this._state.deletingAllScope === scope;
+    const progress = this._state.uploadingScope === scope ? this._state.uploadProgress : null;
+    const uploadLabel = this._state.uploadingScope === scope
       ? (progress && progress.total > 1 ? `Uploading ${progress.done}/${progress.total}...` : 'Uploading...')
       : '+ Upload Icons';
     const cards = items.length === 0
@@ -279,6 +319,9 @@ class TwAddonCustomIconsSettings extends HTMLElement {
                    <span>${uploadLabel}</span>
                    <input type="file" multiple accept=".png,.svg,.webp,.jpg,.jpeg,.gif,.ico,image/*" data-upload-scope="${scope}" ${busy ? 'disabled' : ''} />
                  </label>
+                 ${items.length > 0
+                   ? `<button type="button" class="delete-all-btn" data-delete-all-scope="${scope}" data-delete-all-title="${escapeHtml(title)}" data-delete-all-count="${items.length}" ${busy ? 'disabled' : ''}>${deletingAll ? 'Deleting...' : 'Delete All'}</button>`
+                   : ''}
                </div>`
             : ''}
         </div>
@@ -326,6 +369,18 @@ class TwAddonCustomIconsSettings extends HTMLElement {
         }
         .upload-btn.disabled { opacity: 0.6; pointer-events: none; }
         .upload-btn input { display: none; }
+        .delete-all-btn {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-height: 36px; padding: 0 12px; border-radius: 8px;
+          background: transparent; color: var(--tw-state-critical);
+          border: 1px solid color-mix(in srgb, var(--tw-state-critical) 55%, var(--tw-border));
+          font-size: 0.82rem; font-weight: 600; font-family: inherit; cursor: pointer;
+        }
+        .delete-all-btn:hover:not(:disabled) {
+          background: rgba(220, 38, 38, 0.12);
+          border-color: var(--tw-state-critical);
+        }
+        .delete-all-btn:disabled { opacity: 0.6; cursor: default; }
         .grid {
           display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
           gap: 8px;
@@ -405,6 +460,16 @@ class TwAddonCustomIconsSettings extends HTMLElement {
         const scope = el.getAttribute('data-upload-scope') || 'user';
         void this.handleUpload(scope, el.files);
         el.value = '';
+      });
+    });
+
+    this.shadowRoot.querySelectorAll('button[data-delete-all-scope]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const el = e.currentTarget;
+        const scope = el.getAttribute('data-delete-all-scope') || 'user';
+        const title = el.getAttribute('data-delete-all-title') || (scope === 'site' ? 'Site Icons' : 'My Icons');
+        const count = Number(el.getAttribute('data-delete-all-count') || '0');
+        void this.handleDeleteAll(scope, title, count);
       });
     });
 

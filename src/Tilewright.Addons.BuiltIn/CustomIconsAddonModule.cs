@@ -104,6 +104,11 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
             return Task.FromResult(HandleDelete(payload, user, host));
         }
 
+        if (string.Equals(action, "delete-all", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(HandleDeleteAll(payload, user, host));
+        }
+
         return Task.FromResult<object?>(new { error = "Unknown action." });
     }
 
@@ -289,6 +294,49 @@ public sealed partial class CustomIconsAddonModule : IAddonModule, IActionHandle
 
         File.Delete(fullPath);
         return new { ok = true };
+    }
+
+    private static object? HandleDeleteAll(JsonElement? payload, AddonUserContext user, IAddonHostContext host)
+    {
+        if (payload is null || payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return new { error = "Invalid delete-all payload." };
+        }
+
+        var scope = GetString(payload.Value, "scope") ?? "user";
+        var isSite = string.Equals(scope, "site", StringComparison.OrdinalIgnoreCase);
+        if (isSite && !user.IsAdmin)
+        {
+            return new { error = "Admin role required to delete Site Icons." };
+        }
+
+        var targetDir = isSite
+            ? Path.Combine(host.DataFolder, "site")
+            : GetUserDir(host.DataFolder, user.UserId);
+        if (!Directory.Exists(targetDir))
+        {
+            return new { ok = true, deleted = 0, errors = Array.Empty<string>() };
+        }
+
+        var deleted = 0;
+        var errors = new List<string>();
+        foreach (var file in Directory.GetFiles(targetDir))
+        {
+            if (!AllowedExtensions.Contains(Path.GetExtension(file))) continue;
+            try
+            {
+                File.Delete(file);
+                deleted++;
+            }
+            catch (Exception ex)
+            {
+                var fileName = Path.GetFileName(file);
+                host.Logger.LogWarning(ex, "Failed deleting custom icon {FileName}", fileName);
+                errors.Add($"{fileName}: failed to delete.");
+            }
+        }
+
+        return new { ok = errors.Count == 0, deleted, errors };
     }
 
     private static List<DynamicIconItem> ReadFolderIcons(string dir, string routePrefix)

@@ -333,6 +333,71 @@ public sealed class AddonFrameworkTests : IDisposable
         Assert.Equal(svgV2, savedContent);
     }
 
+    [Fact]
+    public async Task CustomIcons_DeleteAll_DeletesScopeAndEnforcesAdminForSite()
+    {
+        var dataFolder = Path.Combine(_dataRoot, "custom-icons-delete-all");
+        var module = new Tilewright.Addons.BuiltIn.CustomIconsAddonModule();
+        var adminUser = new Tilewright.AddonContracts.AddonUserContext("user1", IsAdmin: true);
+        var normalUser = new Tilewright.AddonContracts.AddonUserContext("user1", IsAdmin: false);
+        var adminHost = new StubAddonHostContext("custom-icons", dataFolder, adminUser);
+        var normalHost = new StubAddonHostContext("custom-icons", dataFolder, normalUser);
+        await module.InitializeAsync(adminHost);
+
+        var svgBase64 = "data:image/svg+xml;base64," + Convert.ToBase64String(
+            Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"><circle r=\"5\"/></svg>"));
+
+        await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user",
+            files = new[]
+            {
+                new { fileName = "u1.svg", dataBase64 = svgBase64 },
+                new { fileName = "u2.svg", dataBase64 = svgBase64 }
+            }
+        }), adminHost);
+
+        await module.HandleActionAsync("upload", JsonSerializer.SerializeToElement(new
+        {
+            scope = "site",
+            files = new[]
+            {
+                new { fileName = "s1.svg", dataBase64 = svgBase64 },
+                new { fileName = "s2.svg", dataBase64 = svgBase64 }
+            }
+        }), adminHost);
+
+        // Non-admin cannot delete-all Site Icons
+        var denied = JsonSerializer.SerializeToElement(await module.HandleActionAsync("delete-all", JsonSerializer.SerializeToElement(new
+        {
+            scope = "site"
+        }), normalHost));
+        Assert.True(denied.TryGetProperty("error", out _));
+
+        // Non-admin can delete-all My Icons without affecting Site Icons
+        var delUser = JsonSerializer.SerializeToElement(await module.HandleActionAsync("delete-all", JsonSerializer.SerializeToElement(new
+        {
+            scope = "user"
+        }), normalHost));
+        Assert.True(delUser.GetProperty("ok").GetBoolean());
+        Assert.Equal(2, delUser.GetProperty("deleted").GetInt32());
+
+        var afterUserDel = JsonSerializer.SerializeToElement(await module.HandleActionAsync("list", null, adminHost));
+        Assert.Equal(0, afterUserDel.GetProperty("user").GetArrayLength());
+        Assert.Equal(2, afterUserDel.GetProperty("site").GetArrayLength());
+
+        // Admin can delete-all Site Icons
+        var delSite = JsonSerializer.SerializeToElement(await module.HandleActionAsync("delete-all", JsonSerializer.SerializeToElement(new
+        {
+            scope = "site"
+        }), adminHost));
+        Assert.True(delSite.GetProperty("ok").GetBoolean());
+        Assert.Equal(2, delSite.GetProperty("deleted").GetInt32());
+
+        var afterSiteDel = JsonSerializer.SerializeToElement(await module.HandleActionAsync("list", null, adminHost));
+        Assert.Equal(0, afterSiteDel.GetProperty("site").GetArrayLength());
+    }
+
     private sealed class StubAddonHostContext(
         string addonId,
         string dataFolder,
