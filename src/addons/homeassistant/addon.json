@@ -51,6 +51,14 @@
           },
           { "key": "unitOverride", "label": "Unit override (optional)", "type": "text" },
           {
+            "key": "valueFormat",
+            "label": "Value format (optional)",
+            "type": "text",
+            "helpText": "Format numbers (e.g. #,##0.00, 0.000, $ #,###.00, 0.00 W) or dates/times (e.g. HH:mm, dd MMM HH:mm, relative). Leave blank for raw value.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide"
+          },
+          {
             "key": "iconPosition",
             "label": "Icon position",
             "type": "select",

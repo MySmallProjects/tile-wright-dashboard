@@ -129,6 +129,8 @@ public sealed class SettingsFieldSchema
     /// <summary>text | multiline | number | toggle | select | colour | icon | url | duration | secret | group</summary>
     public string Type { get; set; } = "text";
     public string? HelpText { get; set; }
+    public string? HelpLinkUrl { get; set; }
+    public string? HelpLinkLabel { get; set; }
     public JsonElement? DefaultValue { get; set; }
     public bool Required { get; set; }
     public double? Min { get; set; }

@@ -121,6 +121,10 @@ class TwAddonHaSensor extends HTMLElement {
       ? this._settings.iconPosition
       : 'none';
     const unit = this._settings.unitOverride || st.unit || '';
+    const displayValue =
+      st.value !== null && typeof this._context?.formatValue === 'function'
+        ? this._context.formatValue(st.value, this._settings.valueFormat)
+        : st.value;
 
     const valueColour = st.customColour
       ? st.customColour
@@ -155,7 +159,7 @@ class TwAddonHaSensor extends HTMLElement {
     const bodyHtml = st.needsSetup
       ? `<div class="sub"><strong>Needs setup</strong><br>${st.error || 'Select an entity in tile settings.'}</div>`
       : st.value !== null
-        ? `<div class="main">${iconHtml}<div class="val">${st.value}${unit ? `<span class="unit">${unit}</span>` : ''}</div></div>`
+        ? `<div class="main">${iconHtml}<div class="val">${displayValue}${unit ? `<span class="unit">${unit}</span>` : ''}</div></div>`
         : st.error
           ? `<div class="err">${st.error}</div>`
           : '<div class="sub">Loading...</div>';

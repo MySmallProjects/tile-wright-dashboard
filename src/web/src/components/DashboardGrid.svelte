@@ -5,6 +5,7 @@
   import { api } from '../lib/api';
   import { ensureAddonScriptLoaded } from '../lib/addonLoader';
   import { resolveIcon, resolveMdiPath } from '../lib/icons';
+  import { formatValue } from '../lib/valueFormatter';
   import type {
     AddonOverview,
     AddonTile,
@@ -211,7 +212,8 @@
         addonId: def.addonId,
         tileId: tile.id,
         resolveIconPath: resolveMdiPath,
-        resolveIcon
+        resolveIcon,
+        formatValue
       };
 
       wc.addEventListener('tile-data-changed', async (ev: Event) => {

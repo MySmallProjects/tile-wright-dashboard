@@ -174,8 +174,16 @@
         {/if}
       </div>
 
-      {#if field.helpText}
-        <div class="help muted">{field.helpText}</div>
+      {#if field.helpText || field.helpLinkUrl}
+        <div class="help muted">
+          {#if field.helpText}{field.helpText}{/if}
+          {#if field.helpLinkUrl}
+            {#if field.helpText}{' '}{/if}
+            <a class="help-link" href={field.helpLinkUrl} target="_blank" rel="noopener noreferrer">
+              {field.helpLinkLabel || 'Help'} ↗
+            </a>
+          {/if}
+        </div>
       {/if}
 
       {#if field.type === 'text' || field.type === 'url' || field.type === 'duration'}
@@ -323,6 +331,15 @@
   }
   .help {
     font-size: 0.8rem;
+  }
+  .help-link {
+    color: var(--tw-accent);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .help-link:hover {
+    text-decoration: underline;
   }
   .toggle-row {
     display: inline-flex;

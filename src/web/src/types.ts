@@ -108,6 +108,8 @@ export interface SettingsFieldSchema {
     | 'secret'
     | 'group';
   helpText?: string | null;
+  helpLinkUrl?: string | null;
+  helpLinkLabel?: string | null;
   defaultValue?: unknown;
   required?: boolean;
   min?: number | null;
