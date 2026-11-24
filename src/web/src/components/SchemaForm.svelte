@@ -99,7 +99,14 @@
   function isFieldVisible(field: SettingsFieldSchema): boolean {
     const cond = field.visibleWhen;
     if (!cond || !cond.key) return true;
-    return values[cond.key] === cond.equals;
+    const val = values[cond.key];
+    if (cond.notEquals !== undefined && cond.notEquals !== null && val === cond.notEquals) {
+      return false;
+    }
+    if (cond.equals !== undefined && cond.equals !== null && val !== cond.equals) {
+      return false;
+    }
+    return true;
   }
 
   function validate(): boolean {

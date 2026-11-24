@@ -139,9 +139,13 @@ class TwAddonHaControl extends HTMLElement {
   render() {
     const st = this._state;
     const label = this._settings.label || st.friendlyName || this.entityId || 'HA Control';
-    const labelPos = this._settings.labelPosition === 'bottom' ? 'bottom' : 'top';
+    const rawLabelPos = this._settings.labelPosition;
+    const labelPos = rawLabelPos === 'bottom' || rawLabelPos === 'none' ? rawLabelPos : 'top';
+    const ariaLabel = String(label).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     const service = this._settings.service || 'toggle';
     const displayMode = this._settings.displayMode === 'icon' ? 'icon' : 'text';
+    const iconSizeMap = { small: 32, medium: 48, large: 64, xlarge: 128 };
+    const iconPx = iconSizeMap[this._settings.iconSize] || 48;
     const customBtnLabel = typeof this._settings.buttonLabel === 'string' ? this._settings.buttonLabel.trim() : '';
     const isOn = service !== 'press' && String(st.state || '').toLowerCase() === 'on';
 
@@ -191,9 +195,9 @@ class TwAddonHaControl extends HTMLElement {
           flex: 1; width: 100%; height: 100%; border: none; background: transparent; color: inherit;
           font-family: inherit; padding: var(--tw-tile-padding, 12px);
           display: flex; flex-direction: column;
-          align-items: ${displayMode === 'icon' ? 'center' : 'flex-start'};
-          justify-content: space-between;
-          text-align: ${displayMode === 'icon' ? 'center' : 'left'};
+          align-items: ${displayMode === 'icon' || labelPos === 'none' ? 'center' : 'flex-start'};
+          justify-content: ${labelPos === 'none' && !updatedText && !st.error ? 'center' : 'space-between'};
+          text-align: ${displayMode === 'icon' || labelPos === 'none' ? 'center' : 'left'};
           cursor: pointer; touch-action: manipulation; gap: 6px; overflow: hidden;
         }
         .label { font-size: 0.88rem; font-weight: 600; color: var(--tw-text-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -204,7 +208,7 @@ class TwAddonHaControl extends HTMLElement {
           border: 1px solid var(--tw-border);
         }
         .icon-wrap {
-          flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center;
+          flex: 1 1 0; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center;
           color: var(--tw-text-muted); transition: color 0.15s ease, transform 0.1s ease;
         }
         .icon-wrap.is-on {
@@ -212,7 +216,7 @@ class TwAddonHaControl extends HTMLElement {
         }
         .icon-wrap svg,
         .icon-wrap img {
-          width: 40px; height: 40px; max-width: 100%; max-height: 100%;
+          width: ${iconPx}px; height: ${iconPx}px; max-width: 100%; max-height: 100%;
           object-fit: contain; display: block;
         }
         .updated { font-size: 0.72rem; color: var(--tw-text-muted); opacity: 0.85; white-space: nowrap; }
@@ -220,7 +224,7 @@ class TwAddonHaControl extends HTMLElement {
       </style>
       ${st.needsSetup
         ? `<div style="padding:14px;font-size:0.84rem;color:var(--tw-text-muted);"><strong>Needs setup</strong><br>${st.error || 'Select a Home Assistant entity.'}</div>`
-        : `<button type="button" class="tile-btn" ${st.toggling ? 'disabled' : ''}>
+        : `<button type="button" class="tile-btn" aria-label="${ariaLabel}" ${st.toggling ? 'disabled' : ''}>
              ${labelPos === 'top' ? labelHtml : ''}
              ${centerHtml}
              ${labelPos === 'bottom' ? labelHtml : ''}

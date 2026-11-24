@@ -124,6 +124,7 @@ export interface SettingsFieldSchema {
 export interface FieldVisibilityCondition {
   key: string;
   equals?: unknown;
+  notEquals?: unknown;
 }
 
 export interface TileElementSpec {

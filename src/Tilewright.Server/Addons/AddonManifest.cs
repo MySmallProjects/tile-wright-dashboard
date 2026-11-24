@@ -119,7 +119,11 @@ public sealed class FieldVisibilityCondition
 {
     public string Key { get; set; } = string.Empty;
     [System.Text.Json.Serialization.JsonPropertyName("equals")]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public JsonElement? EqualsValue { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("notEquals")]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? NotEqualsValue { get; set; }
 }
 
 public sealed class SettingsFieldSchema

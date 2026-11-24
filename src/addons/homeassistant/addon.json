@@ -135,7 +135,6 @@
             "type": "text",
             "helpText": "e.g. light.kitchen or switch.desk_lamp"
           },
-          { "key": "label", "label": "Label override (optional)", "type": "text" },
           {
             "key": "labelPosition",
             "label": "Label position",
@@ -143,8 +142,15 @@
             "defaultValue": "top",
             "options": [
               { "value": "top", "label": "Top" },
-              { "value": "bottom", "label": "Bottom" }
+              { "value": "bottom", "label": "Bottom" },
+              { "value": "none", "label": "Hidden" }
             ]
+          },
+          {
+            "key": "label",
+            "label": "Label override (optional)",
+            "type": "text",
+            "visibleWhen": { "key": "labelPosition", "notEquals": "none" }
           },
           {
             "key": "service",
@@ -172,6 +178,19 @@
             "options": [
               { "value": "text", "label": "Text / State pill (default)" },
               { "value": "icon", "label": "Icon" }
+            ]
+          },
+          {
+            "key": "iconSize",
+            "label": "Icon size",
+            "type": "select",
+            "defaultValue": "medium",
+            "visibleWhen": { "key": "displayMode", "equals": "icon" },
+            "options": [
+              { "value": "small", "label": "Small (32x32)" },
+              { "value": "medium", "label": "Medium (48x48)" },
+              { "value": "large", "label": "Large (64x64)" },
+              { "value": "xlarge", "label": "X-Large (128x128)" }
             ]
           },
           {
