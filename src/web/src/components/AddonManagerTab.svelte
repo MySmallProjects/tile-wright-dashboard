@@ -17,6 +17,30 @@
   let busy = $state(false);
   let error = $state('');
   let statusMsg = $state('');
+  let search = $state('');
+
+  let enabledCount = $derived(overview.addons.filter((a) => a.state === 'enabled').length);
+  let disabledCount = $derived(overview.addons.filter((a) => a.state === 'disabled').length);
+
+  let visibleAddons = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    const list = q
+      ? overview.addons.filter(
+          (a) =>
+            a.name.toLowerCase().includes(q) ||
+            a.id.toLowerCase().includes(q) ||
+            (a.description || '').toLowerCase().includes(q) ||
+            a.state.toLowerCase().includes(q)
+        )
+      : [...overview.addons];
+
+    return list.sort((a, b) => {
+      const aDisabled = a.state === 'disabled' ? 1 : 0;
+      const bDisabled = b.state === 'disabled' ? 1 : 0;
+      if (aDisabled !== bDisabled) return aDisabled - bDisabled;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    });
+  });
 
   // Editing global addon settings for one addon
   let configAddon = $state<AddonInfo | null>(null);
@@ -183,9 +207,30 @@
       {/if}
     </div>
   {:else}
+    <div class="list-head">
+      <h3>
+        Installed Addons
+        <span class="count">
+          ({overview.addons.length} — {enabledCount} enabled, {disabledCount} disabled)
+        </span>
+      </h3>
+      <div class="filter-box">
+        <input
+          type="search"
+          bind:value={search}
+          placeholder="Filter addons..."
+          aria-label="Filter addons"
+        />
+      </div>
+    </div>
     <div class="addon-list">
-      {#each overview.addons as addon (addon.id)}
-        <div class="addon-card">
+      {#if visibleAddons.length === 0}
+        <div class="empty-msg muted small">
+          {search.trim() ? `No addons match "${search.trim()}".` : 'No addons installed.'}
+        </div>
+      {:else}
+        {#each visibleAddons as addon (addon.id)}
+          <div class="addon-card" class:is-disabled={addon.state === 'disabled'}>
           <div class="addon-info">
             <div class="addon-title">
               <strong>{addon.name}</strong>
@@ -219,6 +264,7 @@
           </div>
         </div>
       {/each}
+      {/if}
     </div>
   {/if}
 </div>
@@ -255,6 +301,35 @@
   .upload-label {
     cursor: pointer;
   }
+  .list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .list-head h3 {
+    margin: 0;
+    font-size: 0.96rem;
+  }
+  .list-head .count {
+    font-weight: 400;
+    color: var(--tw-text-muted);
+    font-size: 0.85rem;
+  }
+  .filter-box {
+    flex: 0 1 240px;
+    min-width: 160px;
+  }
+  .filter-box input {
+    width: 100%;
+    min-height: 34px;
+    padding: 4px 10px;
+    font-size: 0.84rem;
+  }
+  .empty-msg {
+    padding: 12px 4px;
+  }
   .addon-list {
     display: flex;
     flex-direction: column;
@@ -270,6 +345,9 @@
     border-radius: 12px;
     background: var(--tw-surface-elevated);
     border: 1px solid var(--tw-border);
+  }
+  .addon-card.is-disabled {
+    opacity: 0.72;
   }
   .addon-info {
     flex: 1 1 240px;
