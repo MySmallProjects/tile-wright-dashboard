@@ -2,7 +2,7 @@
   "id": "image",
   "name": "Image & Camera",
   "version": "1.0.0",
-  "description": "Displays an image from a URL (fetched via server) or a random image from a server folder.",
+  "description": "Displays an image from a URL (fetched via server), a live MJPEG stream, or a random image from a server folder.",
   "author": "Tilewright",
   "minHostVersion": "0.1.0",
   "contributes": {
@@ -19,7 +19,7 @@
       {
         "id": "image",
         "name": "Image / Camera",
-        "description": "Server-fetched URL image or random folder photo with refresh interval.",
+        "description": "Server-fetched URL image, live MJPEG stream, or random folder photo.",
         "icon": "image",
         "element": { "tagName": "tw-addon-image", "script": "image-tile.js" },
         "defaultSize": { "w": 6, "h": 4 },
@@ -33,12 +33,32 @@
             "defaultValue": "url",
             "options": [
               { "value": "url", "label": "Remote URL (via server)" },
+              { "value": "mjpeg", "label": "MJPEG stream (live)" },
               { "value": "folder", "label": "Random image from server folder" }
             ]
           },
-          { "key": "imageUrl", "label": "Image URL", "type": "url", "helpText": "Used when Source is Remote URL." },
-          { "key": "folderPath", "label": "Subfolder (optional)", "type": "text", "helpText": "Relative subfolder under the image folder root." },
-          { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "15m", "helpText": "e.g. 5s for camera, 2h for photo frame." },
+          {
+            "key": "imageUrl",
+            "label": "Image / Stream URL",
+            "type": "url",
+            "visibleWhen": { "key": "sourceMode", "notEquals": "folder" },
+            "helpText": "Used when Source is Remote URL or MJPEG stream."
+          },
+          {
+            "key": "folderPath",
+            "label": "Subfolder (optional)",
+            "type": "text",
+            "visibleWhen": { "key": "sourceMode", "equals": "folder" },
+            "helpText": "Relative subfolder under the image folder root."
+          },
+          {
+            "key": "refreshInterval",
+            "label": "Refresh interval",
+            "type": "duration",
+            "defaultValue": "15m",
+            "visibleWhen": { "key": "sourceMode", "notEquals": "mjpeg" },
+            "helpText": "e.g. 5s for camera snapshot, 2h for photo frame. Disabled for MJPEG streams."
+          },
           {
             "key": "fit",
             "label": "Image fit",
