@@ -21,6 +21,14 @@ function computeDaysRemaining(settings) {
   const month = Number(match[2]) - 1;
   const day = Number(match[3]);
 
+  if (mode === 'biweekly') {
+    const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const anchorUtc = Date.UTC(year, month, day);
+    const diffDays = Math.round((anchorUtc - todayUtc) / 86400000);
+    if (diffDays >= 0) return diffDays;
+    return ((diffDays % 14) + 14) % 14;
+  }
+
   if (mode === 'yearly') {
     let next = new Date(today.getFullYear(), month, day);
     if (next < today) next = new Date(today.getFullYear() + 1, month, day);

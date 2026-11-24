@@ -2,7 +2,7 @@
   "id": "countdown",
   "name": "Countdown",
   "version": "1.0.0",
-  "description": "Counts days until one-off, weekly, or yearly dates (Christmas, bin day, holidays).",
+  "description": "Counts days until one-off, weekly, biweekly, or yearly dates (Christmas, bin day, holidays).",
   "author": "Tilewright",
   "minHostVersion": "0.1.0",
   "contributes": {
@@ -26,6 +26,7 @@
             "options": [
               { "value": "one-off", "label": "One-off date" },
               { "value": "weekly", "label": "Weekly (day of week)" },
+              { "value": "biweekly", "label": "Every two weeks (from target date)" },
               { "value": "yearly", "label": "Yearly (e.g. Christmas)" }
             ]
           },
@@ -33,13 +34,15 @@
             "key": "targetDate",
             "label": "Target date (YYYY-MM-DD)",
             "type": "text",
-            "helpText": "Used for One-off or Yearly mode (e.g. 2026-12-25)."
+            "visibleWhen": { "key": "mode", "notEquals": "weekly" },
+            "helpText": "Used for One-off, Every two weeks (anchor/start date), or Yearly mode (e.g. 2026-12-25)."
           },
           {
             "key": "weekday",
             "label": "Day of week (Weekly mode)",
             "type": "select",
             "defaultValue": "4",
+            "visibleWhen": { "key": "mode", "equals": "weekly" },
             "options": [
               { "value": "0", "label": "Sunday" },
               { "value": "1", "label": "Monday" },
