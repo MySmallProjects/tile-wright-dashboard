@@ -14,6 +14,7 @@
     DashboardDetail,
     DashboardSummary,
     PublicUser,
+    ShellHostState,
     SiteSettings,
     UserSettings,
     VersionInfo
@@ -26,6 +27,7 @@
   import Icon from './components/Icon.svelte';
   import LoginScreen from './components/LoginScreen.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
+  import ShellExtensionSlot, { type ShellHostBridge } from './components/ShellExtensionSlot.svelte';
   import VersionBanner from './components/VersionBanner.svelte';
 
   const AUTOLOGIN_KEY = 'tw_autologin_user_id';
@@ -97,6 +99,53 @@
     )
   );
   let bgStyles = $derived(buildBackgroundStyles(effectiveBg));
+
+  const shellListeners = new Set<(state: ShellHostState) => void>();
+
+  function buildShellHostState(): ShellHostState {
+    return {
+      userId: currentUser?.id ?? '',
+      dashboards: $state.snapshot(enabledDashboards),
+      allDashboards: $state.snapshot(dashboards),
+      activeDashboardId: activeDashboard?.summary.id ?? null,
+      editMode,
+      modalOpen: showSettings || showDashboardManager,
+      infiniteCycle: userSettings.dashboardInfiniteCycle !== false
+    };
+  }
+
+  $effect(() => {
+    const snapshot = buildShellHostState();
+    for (const listener of shellListeners) {
+      try {
+        listener(snapshot);
+      } catch (err) {
+        console.error('Shell extension listener error:', err);
+      }
+    }
+  });
+
+  const shellHost: ShellHostBridge = {
+    getState: () => buildShellHostState(),
+    subscribe: (listener) => {
+      shellListeners.add(listener);
+      try {
+        listener(buildShellHostState());
+      } catch (err) {
+        console.error('Shell extension initial listener error:', err);
+      }
+      return () => {
+        shellListeners.delete(listener);
+      };
+    },
+    stepDashboard: (delta) => stepDashboard(delta),
+    selectDashboard: (id) => selectDashboard(id),
+    notify: (msg, durationMs) => notify(msg, durationMs),
+    invokeAction: async (addonId, action, payload) => {
+      const res = await api.invokeAddonAction(addonId, action, payload);
+      return res.result;
+    }
+  };
 
   $effect(() => {
     const themePref = currentUser ? userSettings.theme : siteSettings.defaultTheme;
@@ -359,6 +408,7 @@
       </div>
 
       <div class="topbar-right">
+        <ShellExtensionSlot slot="topbar" addons={addonOverview.addons} host={shellHost} />
         {#if !editMode}
           <button type="button" onclick={() => (editMode = true)} title="Edit dashboard layout">
             <Icon name="pencil" size={18} /> Edit
@@ -399,13 +449,19 @@
       {/if}
     </div>
 
+    <ShellExtensionSlot slot="headless" addons={addonOverview.addons} host={shellHost} />
+
     <DashboardPager
       dashboards={enabledDashboards}
       activeId={activeDashboard?.summary.id ?? null}
       {editMode}
       infiniteCycle={userSettings.dashboardInfiniteCycle !== false}
       onSelect={(id) => void selectDashboard(id)}
-    />
+    >
+      {#snippet extra()}
+        <ShellExtensionSlot slot="pager" addons={addonOverview.addons} host={shellHost} />
+      {/snippet}
+    </DashboardPager>
 
     {#if showDashboardManager}
       <DashboardManagerModal
@@ -423,6 +479,7 @@
         {currentUser}
         {userSettings}
         {siteSettings}
+        dashboards={enabledDashboards}
         {addonOverview}
         {frontendVersion}
         {serverVersionInfo}

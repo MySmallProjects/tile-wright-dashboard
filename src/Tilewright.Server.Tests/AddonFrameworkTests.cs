@@ -398,6 +398,83 @@ public sealed class AddonFrameworkTests : IDisposable
         Assert.Equal(0, afterSiteDel.GetProperty("site").GetArrayLength());
     }
 
+    [Fact]
+    public async Task BuiltInDashboardCyclerAddon_LoadsWithShellExtensionAndSettingsTab()
+    {
+        using var factory = new TilewrightFactory(_dataRoot);
+        using var client = factory.CreateCookieClient();
+        (await client.PostAsJsonAsync("/api/auth/setup", new { displayName = "Admin", password = "pw" })).EnsureSuccessStatusCode();
+
+        var overview = await client.GetFromJsonAsync<AddonOverviewDto>("/api/addons");
+        Assert.NotNull(overview);
+
+        var cycler = overview.Addons.FirstOrDefault(a => a.Id == "dashboard-cycler");
+        Assert.NotNull(cycler);
+        Assert.True(cycler.BuiltIn);
+        Assert.Equal(AddonStates.Enabled, cycler.State);
+        Assert.Single(cycler.Contributes.ShellExtensions);
+        Assert.Equal("pager", cycler.Contributes.ShellExtensions[0].Slot);
+        Assert.Equal("tw-addon-dashboard-cycler", cycler.Contributes.ShellExtensions[0].Element.TagName);
+        Assert.Single(cycler.Contributes.SettingsTabs);
+        Assert.Equal("Auto-Cycle", cycler.Contributes.SettingsTabs[0].Label);
+
+        // Verify addon scripts are served cleanly
+        var shellJs = await client.GetAsync("/api/addons/dashboard-cycler/assets/cycler-shell.js");
+        Assert.Equal(HttpStatusCode.OK, shellJs.StatusCode);
+        var settingsJs = await client.GetAsync("/api/addons/dashboard-cycler/assets/cycler-settings.js");
+        Assert.Equal(HttpStatusCode.OK, settingsJs.StatusCode);
+        var configJs = await client.GetAsync("/api/addons/dashboard-cycler/assets/cycler-config.js");
+        Assert.Equal(HttpStatusCode.OK, configJs.StatusCode);
+    }
+
+    [Fact]
+    public async Task ShellExtensionValidation_RejectsInvalidSlot_AndMissingScript_AndAcceptsValid()
+    {
+        using var factory = new TilewrightFactory(_dataRoot);
+        using var client = factory.CreateCookieClient();
+        (await client.PostAsJsonAsync("/api/auth/setup", new { displayName = "Admin", password = "pw" })).EnsureSuccessStatusCode();
+
+        string MakeManifest(string slot, string script) => JsonSerializer.Serialize(new
+        {
+            id = "shell-ext-demo",
+            name = "Shell Ext Demo",
+            version = "1.0.0",
+            description = "Tests shell extension validation",
+            author = "Tester",
+            minHostVersion = "0.1.0",
+            contributes = new
+            {
+                shellExtensions = new[]
+                {
+                    new
+                    {
+                        id = "ext",
+                        name = "Ext",
+                        slot,
+                        element = new { tagName = "tw-shell-demo", script }
+                    }
+                }
+            }
+        });
+
+        // Invalid slot
+        var badSlot = BuildZip(new() { ["addon.json"] = MakeManifest("sidebar", "ext.js"), ["ext.js"] = "export {};" });
+        var r1 = await client.PostAsync("/api/addons/upload", ZipForm(badSlot));
+        Assert.Equal(HttpStatusCode.BadRequest, r1.StatusCode);
+        Assert.Contains("invalid slot", await r1.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        // Missing script
+        var missingScript = BuildZip(new() { ["addon.json"] = MakeManifest("headless", "ext.js") });
+        var r2 = await client.PostAsync("/api/addons/upload", ZipForm(missingScript));
+        Assert.Equal(HttpStatusCode.BadRequest, r2.StatusCode);
+        Assert.Contains("missing script", await r2.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        // Valid shell extension
+        var valid = BuildZip(new() { ["addon.json"] = MakeManifest("topbar", "ext.js"), ["ext.js"] = "export {};" });
+        var r3 = await client.PostAsync("/api/addons/upload", ZipForm(valid));
+        Assert.Equal(HttpStatusCode.OK, r3.StatusCode);
+    }
+
     private sealed class StubAddonHostContext(
         string addonId,
         string dataFolder,

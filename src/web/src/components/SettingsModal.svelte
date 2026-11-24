@@ -5,6 +5,7 @@
   import type {
     AddonOverview,
     BackgroundSettings,
+    DashboardSummary,
     PublicUser,
     SettingsTabContribution,
     SiteSettings,
@@ -19,6 +20,7 @@
     currentUser,
     userSettings,
     siteSettings,
+    dashboards = [],
     addonOverview,
     frontendVersion,
     serverVersionInfo,
@@ -32,6 +34,7 @@
     currentUser: PublicUser;
     userSettings: UserSettings;
     siteSettings: SiteSettings;
+    dashboards?: DashboardSummary[];
     addonOverview: AddonOverview;
     frontendVersion: string;
     serverVersionInfo: VersionInfo | null;
@@ -285,6 +288,7 @@
           addonId: tab.addonId,
           isAdmin: currentUser.role === 'admin',
           user: currentUser,
+          dashboards: $state.snapshot(dashboards),
           invokeAction: async (action: string, payload?: unknown) => {
             const res = await api.invokeAddonAction(tab.addonId, action, payload);
             return res.result;

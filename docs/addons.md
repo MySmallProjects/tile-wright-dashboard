@@ -18,7 +18,7 @@ Every addon must have `addon.json` at its root:
 | `description` | Yes | Short description |
 | `author` | Yes | Author name |
 | `minHostVersion` | Yes | Minimum compatible Tilewright server version |
-| `contributes` | Yes | Object containing `tiles[]`, `server`, `themes[]`, `iconPacks[]`, `addonSettingsSchema[]` |
+| `contributes` | Yes | Object containing `tiles[]`, `server`, `themes[]`, `iconPacks[]`, `settingsTabs[]`, `shellExtensions[]`, `addonSettingsSchema[]` |
 
 ### Tile Contribution (`contributes.tiles[]`)
 - `id`: Tile type ID (unique within the addon; full type ID is `<addonId>:<tileId>`).
@@ -36,6 +36,23 @@ Every addon must have `addon.json` at its root:
 - `id`: Pack identifier (used as prefix `<packId>:<iconName>`, e.g. `cmas:christmas-tree`).
 - `name`: Display name shown as a filter chip in all icon pickers.
 - `manifestFile`: Relative path to a JSON file listing `{ "icons": [{ "name", "label", "file", "color": true }] }` (supports PNG, WebP, SVG). Full-colour icons render as `<img>` without recolouring; MDI SVGs use `currentColor`.
+
+### Settings Tab Contribution (`contributes.settingsTabs[]`)
+- `id`: Tab identifier unique within the addon.
+- `label`: Tab title shown in the Settings modal.
+- `scope`: `"user"` (all logged-in users) or `"admin"` (admins only).
+- `element`: `{ "tagName": "tw-my-settings", "script": "my-settings.js" }` — Custom Element receiving `element.context` (`{ addonId, isAdmin, user, dashboards, invokeAction, refreshAddons, notify }`).
+
+### Shell Extension Contribution (`contributes.shellExtensions[]`)
+Always-on client-side Custom Elements mounted in the application shell while a user is logged in (persisting across dashboard switches):
+- `id`: Extension identifier unique within the addon.
+- `name`: Display name.
+- `slot`: Mount location — `"headless"` (hidden background element, default), `"topbar"` (right side of the top navigation bar), or `"pager"` (inside the bottom dashboard pager pill).
+- `element`: `{ "tagName": "tw-my-extension", "script": "my-extension.js" }` — Custom Element receiving `element.host` with:
+  - `getState()` / `subscribe(listener)` for reactive shell state (`{ userId, dashboards, allDashboards, activeDashboardId, editMode, modalOpen, infiniteCycle }`)
+  - `stepDashboard(delta)` and `selectDashboard(id)` for dashboard navigation
+  - `notify(message, durationMs?)` for toast notifications
+  - `invokeAction(action, payload?)` for optional server-side addon actions
 
 ---
 

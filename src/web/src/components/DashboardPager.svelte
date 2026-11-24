@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { DashboardSummary } from '../types';
   import Icon from './Icon.svelte';
 
@@ -7,13 +8,15 @@
     activeId,
     editMode = false,
     infiniteCycle = true,
-    onSelect
+    onSelect,
+    extra
   }: {
     dashboards: DashboardSummary[];
     activeId: string | null;
     editMode?: boolean;
     infiniteCycle?: boolean;
     onSelect: (id: string) => void;
+    extra?: Snippet;
   } = $props();
 
   let activeIndex = $derived(dashboards.findIndex((d) => d.id === activeId));
@@ -57,6 +60,10 @@
     <button type="button" class="nav-btn" aria-label="Next dashboard" disabled={!canNext} onclick={() => step(1)}>
       <Icon name="chevron-right" size={20} />
     </button>
+
+    {#if extra}
+      {@render extra()}
+    {/if}
   </nav>
 {/if}
 

@@ -164,10 +164,41 @@ export interface SettingsTabContribution {
   element: TileElementSpec;
 }
 
+export type ShellExtensionSlot = 'headless' | 'topbar' | 'pager';
+
+export interface ShellExtensionContribution {
+  id: string;
+  name: string;
+  slot: ShellExtensionSlot | string;
+  element: TileElementSpec;
+}
+
+export interface ShellHostState {
+  userId: string;
+  dashboards: DashboardSummary[];
+  allDashboards: DashboardSummary[];
+  activeDashboardId: string | null;
+  editMode: boolean;
+  modalOpen: boolean;
+  infiniteCycle: boolean;
+}
+
+export interface ShellExtensionHost {
+  addonId: string;
+  extensionId: string;
+  getState(): ShellHostState;
+  subscribe(listener: (state: ShellHostState) => void): () => void;
+  stepDashboard(delta: number): void;
+  selectDashboard(id: string): Promise<void>;
+  notify(message: string, durationMs?: number): void;
+  invokeAction(action: string, payload?: unknown): Promise<unknown>;
+}
+
 export interface AddonContributions {
   tiles: TileTypeContribution[];
   themes: ThemeContribution[];
   settingsTabs?: SettingsTabContribution[];
+  shellExtensions?: ShellExtensionContribution[];
   addonSettingsSchema: SettingsFieldSchema[];
 }
 

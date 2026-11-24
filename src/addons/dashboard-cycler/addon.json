@@ -1,0 +1,32 @@
+{
+  "id": "dashboard-cycler",
+  "name": "Dashboard Auto-Cycler",
+  "version": "1.0.0",
+  "description": "Automatically cycles through dashboards at a configurable interval with play/pause controls and interaction pause.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "shellExtensions": [
+      {
+        "id": "cycler",
+        "name": "Dashboard Auto-Cycler",
+        "slot": "pager",
+        "element": {
+          "tagName": "tw-addon-dashboard-cycler",
+          "script": "cycler-shell.js"
+        }
+      }
+    ],
+    "settingsTabs": [
+      {
+        "id": "dashboard-cycler",
+        "label": "Auto-Cycle",
+        "scope": "user",
+        "element": {
+          "tagName": "tw-addon-dashboard-cycler-settings",
+          "script": "cycler-settings.js"
+        }
+      }
+    ]
+  }
+}

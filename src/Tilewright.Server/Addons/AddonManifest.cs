@@ -38,6 +38,7 @@ public sealed class AddonContributions
     public List<ThemeContribution> Themes { get; set; } = [];
     public List<IconPackContribution> IconPacks { get; set; } = [];
     public List<SettingsTabContribution> SettingsTabs { get; set; } = [];
+    public List<ShellExtensionContribution> ShellExtensions { get; set; } = [];
     public List<SettingsFieldSchema> AddonSettingsSchema { get; set; } = [];
 }
 
@@ -46,6 +47,15 @@ public sealed class SettingsTabContribution
     public string Id { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public string Scope { get; set; } = "user"; // "user" | "admin"
+    public TileElementSpec Element { get; set; } = new();
+}
+
+public sealed class ShellExtensionContribution
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    /// <summary>Mount slot: "headless" (default) | "topbar" | "pager"</summary>
+    public string Slot { get; set; } = "headless";
     public TileElementSpec Element { get; set; } = new();
 }
 

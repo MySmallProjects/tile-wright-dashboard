@@ -247,6 +247,42 @@ public static class AddonPackageValidator
             }
         }
 
+        foreach (var tab in manifest.Contributes.SettingsTabs)
+        {
+            if (string.IsNullOrWhiteSpace(tab.Id) || string.IsNullOrWhiteSpace(tab.Label))
+            {
+                return "Every settings tab contribution requires 'id' and 'label'.";
+            }
+            if (string.IsNullOrWhiteSpace(tab.Element.TagName) || !tab.Element.TagName.Contains('-'))
+            {
+                return $"Settings tab '{tab.Id}' element.tagName must be a valid custom element name containing a hyphen.";
+            }
+            if (!FileExistsInsideRoot(tab.Element.Script))
+            {
+                return $"Settings tab '{tab.Id}' references missing script '{tab.Element.Script}'.";
+            }
+        }
+
+        foreach (var ext in manifest.Contributes.ShellExtensions)
+        {
+            if (string.IsNullOrWhiteSpace(ext.Id) || string.IsNullOrWhiteSpace(ext.Name))
+            {
+                return "Every shell extension contribution requires 'id' and 'name'.";
+            }
+            if (ext.Slot is not ("headless" or "topbar" or "pager"))
+            {
+                return $"Shell extension '{ext.Id}' has invalid slot '{ext.Slot}'. Allowed values: headless, topbar, pager.";
+            }
+            if (string.IsNullOrWhiteSpace(ext.Element.TagName) || !ext.Element.TagName.Contains('-'))
+            {
+                return $"Shell extension '{ext.Id}' element.tagName must be a valid custom element name containing a hyphen.";
+            }
+            if (!FileExistsInsideRoot(ext.Element.Script))
+            {
+                return $"Shell extension '{ext.Id}' references missing script '{ext.Element.Script}'.";
+            }
+        }
+
         return null;
     }
 }
