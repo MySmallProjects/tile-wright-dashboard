@@ -121,6 +121,8 @@ class TwAddonHttpGet extends HTMLElement {
       ? this._settings.labelPosition
       : 'top';
     const displayMode = this._settings.displayMode === 'icon' ? 'icon' : 'pill';
+    const iconSizeMap = { small: 32, medium: 48, large: 64, xlarge: 128 };
+    const iconPx = iconSizeMap[this._settings.iconSize] || 48;
     this._pillText = (typeof this._settings.buttonText === 'string' && this._settings.buttonText.trim())
       ? this._settings.buttonText.trim()
       : 'Trigger';
@@ -161,6 +163,7 @@ class TwAddonHttpGet extends HTMLElement {
         }
         button.tile-btn:disabled { cursor: wait; }
         .label {
+          flex-shrink: 0;
           font-size: 0.88rem; font-weight: 600; color: var(--tw-text-muted);
           max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
@@ -181,6 +184,8 @@ class TwAddonHttpGet extends HTMLElement {
         .icon-wrap {
           position: relative;
           display: flex; align-items: center; justify-content: center;
+          flex-shrink: 1; min-width: 0; min-height: 0;
+          max-width: 100%; max-height: 100%;
           color: var(--tw-accent); border-radius: 999px;
           transition: transform 0.15s ease;
         }
@@ -194,7 +199,7 @@ class TwAddonHttpGet extends HTMLElement {
         }
         .icon-wrap svg,
         .icon-wrap img {
-          width: 38px; height: 38px; max-width: 100%; max-height: 100%;
+          width: ${iconPx}px; height: ${iconPx}px; max-width: 100%; max-height: 100%;
           object-fit: contain; display: block;
           transition: filter 0.2s ease, transform 0.15s ease;
         }

@@ -49,7 +49,20 @@
             ]
           },
           { "key": "buttonText", "label": "Pill text", "type": "text", "defaultValue": "Trigger" },
-          { "key": "icon", "label": "Icon (when Button display = Icon)", "type": "icon", "defaultValue": "lightning-bolt" }
+          { "key": "icon", "label": "Icon (when Button display = Icon)", "type": "icon", "defaultValue": "lightning-bolt" },
+          {
+            "key": "iconSize",
+            "label": "Icon size",
+            "type": "select",
+            "defaultValue": "medium",
+            "visibleWhen": { "key": "displayMode", "equals": "icon" },
+            "options": [
+              { "value": "small", "label": "Small (32x32)" },
+              { "value": "medium", "label": "Medium (48x48)" },
+              { "value": "large", "label": "Large (64x64)" },
+              { "value": "xlarge", "label": "X-Large (128x128)" }
+            ]
+          }
         ]
       }
     ]
