@@ -25,12 +25,12 @@
     onCancel?: () => void;
   } = $props();
 
-  function buildInitialValues(): Record<string, unknown> {
+  function buildValuesFrom(source?: Record<string, unknown>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const f of schema) {
       if (f.type === 'secret') continue;
-      if (initialValues && initialValues[f.key] !== undefined) {
-        out[f.key] = structuredClone($state.snapshot(initialValues[f.key]));
+      if (source && source[f.key] !== undefined) {
+        out[f.key] = structuredClone($state.snapshot(source[f.key]));
       } else if (f.defaultValue !== undefined) {
         out[f.key] = structuredClone($state.snapshot(f.defaultValue));
       } else if (f.type === 'toggle') {
@@ -46,11 +46,20 @@
     return out;
   }
 
-  let values = $state<Record<string, unknown>>(buildInitialValues());
+  let values = $state<Record<string, unknown>>(buildValuesFrom(initialValues));
   let secretDrafts = $state<Record<string, string>>({});
   let clearedSecrets = $state<Record<string, boolean>>({});
   let dynamicOptions = $state<Record<string, SelectOptionSpec[]>>({});
   let errors = $state<Record<string, string>>({});
+
+  export function getValues(): Record<string, unknown> {
+    return structuredClone($state.snapshot(values));
+  }
+
+  export function setValues(next: Record<string, unknown>): void {
+    values = buildValuesFrom(next);
+    errors = {};
+  }
 
   onMount(async () => {
     if (!addonId) return;
