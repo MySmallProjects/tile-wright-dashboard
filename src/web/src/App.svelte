@@ -363,8 +363,12 @@
       if (activeEl instanceof HTMLElement) {
         const tag = activeEl.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || activeEl.isContentEditable) return;
-        // Also skip if a shadow host (e.g. tw-note-tile) has an active textarea focused
-        if (activeEl.shadowRoot?.activeElement?.tagName === 'TEXTAREA') return;
+        // Also skip if a shadow host (e.g. notes or task-list tile) has an active form control focused
+        const shadowActive = activeEl.shadowRoot?.activeElement;
+        if (shadowActive instanceof HTMLElement) {
+          const sTag = shadowActive.tagName;
+          if (sTag === 'INPUT' || sTag === 'TEXTAREA' || sTag === 'SELECT' || shadowActive.isContentEditable) return;
+        }
       }
       if (e.key === 'ArrowRight') stepDashboard(1);
       if (e.key === 'ArrowLeft') stepDashboard(-1);

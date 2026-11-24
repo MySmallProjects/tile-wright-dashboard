@@ -4,7 +4,7 @@
   import 'gridstack/dist/gridstack.min.css';
   import { api } from '../lib/api';
   import { ensureAddonScriptLoaded } from '../lib/addonLoader';
-  import { resolveIcon, resolveMdiPath } from '../lib/icons';
+  import { getAddonIconPacks, listAvailableIcons, resolveIcon, resolveMdiPath } from '../lib/icons';
   import { formatValue } from '../lib/valueFormatter';
   import type {
     AddonOverview,
@@ -213,6 +213,12 @@
         tileId: tile.id,
         resolveIconPath: resolveMdiPath,
         resolveIcon,
+        listIcons: () => [
+          ...listAvailableIcons().map((name) => ({ refId: name, label: name })),
+          ...getAddonIconPacks().flatMap((p) =>
+            p.icons.map((ic) => ({ refId: ic.refId, label: ic.label || ic.name }))
+          )
+        ],
         formatValue
       };
 

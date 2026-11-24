@@ -1,0 +1,72 @@
+{
+  "id": "task-list",
+  "name": "Task List",
+  "version": "1.0.0",
+  "description": "Vertical task list with drag-to-reorder, task icons, check-off, and configurable view interaction.",
+  "author": "Tilewright",
+  "minHostVersion": "0.1.0",
+  "contributes": {
+    "tiles": [
+      {
+        "id": "task-list",
+        "name": "Task List",
+        "description": "Checklist with drag handles, optional task icons, and inline editing.",
+        "icon": "check",
+        "element": { "tagName": "tw-addon-task-list", "script": "task-list-tile.js" },
+        "defaultSize": { "w": 4, "h": 4 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 16, "h": 16 },
+        "settingsSchema": [
+          { "key": "title", "label": "Title", "type": "text", "defaultValue": "Tasks" },
+          { "key": "colour", "label": "Accent colour", "type": "colour", "defaultValue": "#2563eb" },
+          {
+            "key": "interactionMode",
+            "label": "Interaction mode",
+            "type": "select",
+            "defaultValue": "full",
+            "options": [
+              { "value": "full", "label": "Full editing" },
+              { "value": "check-only", "label": "Check-off only" },
+              { "value": "readonly", "label": "Read-only" }
+            ],
+            "helpText": "Controls what users can do directly on the tile in view mode."
+          },
+          {
+            "key": "completedBehavior",
+            "label": "Completed tasks",
+            "type": "select",
+            "defaultValue": "keep",
+            "options": [
+              { "value": "keep", "label": "Keep in place" },
+              { "value": "sink", "label": "Move to bottom" },
+              { "value": "hide", "label": "Hide completed" }
+            ]
+          },
+          {
+            "key": "density",
+            "label": "Row density",
+            "type": "select",
+            "defaultValue": "comfortable",
+            "options": [
+              { "value": "comfortable", "label": "Comfortable" },
+              { "value": "compact", "label": "Compact" }
+            ]
+          },
+          {
+            "key": "showProgress",
+            "label": "Show progress counter & bar",
+            "type": "toggle",
+            "defaultValue": true
+          },
+          {
+            "key": "showResetButton",
+            "label": "Show reset (uncheck all) button",
+            "type": "toggle",
+            "defaultValue": false,
+            "helpText": "Adds a button in the header to untick all completed tasks at once."
+          }
+        ]
+      }
+    ]
+  }
+}
