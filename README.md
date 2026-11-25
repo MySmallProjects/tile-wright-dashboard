@@ -41,7 +41,7 @@ Run it:
 
 ## Quick Start
 
-### Backend & Frontend (Phase 3 — .NET 10 + Svelte 5)
+### Backend & Frontend (.NET 10 + Svelte 5)
 
 ```bash
 npm --prefix src/web install
