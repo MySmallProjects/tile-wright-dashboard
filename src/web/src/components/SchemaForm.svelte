@@ -4,6 +4,7 @@
   import type { SelectOptionSpec, SettingsFieldSchema } from '../types';
   import Icon from './Icon.svelte';
   import IconPicker from './IconPicker.svelte';
+  import ColourInput from './ColourInput.svelte';
 
   let {
     schema,
@@ -78,7 +79,7 @@
     const list = Array.isArray(values[field.key]) ? [...(values[field.key] as Record<string, unknown>[])] : [];
     const row: Record<string, unknown> = {};
     for (const sub of field.fields ?? []) {
-      row[sub.key] = sub.defaultValue ?? (sub.type === 'toggle' ? false : sub.type === 'colour' ? '#2563eb' : '');
+      row[sub.key] = sub.defaultValue ?? (sub.type === 'toggle' ? false : '');
     }
     list.push(row);
     values[field.key] = list;
@@ -87,6 +88,14 @@
   function removeGroupRow(fieldKey: string, idx: number) {
     const list = Array.isArray(values[fieldKey]) ? [...(values[fieldKey] as Record<string, unknown>[])] : [];
     list.splice(idx, 1);
+    values[fieldKey] = list;
+  }
+
+  function moveGroupRow(fieldKey: string, idx: number, delta: -1 | 1) {
+    const list = Array.isArray(values[fieldKey]) ? [...(values[fieldKey] as Record<string, unknown>[])] : [];
+    const target = idx + delta;
+    if (target < 0 || target >= list.length) return;
+    [list[idx], list[target]] = [list[target], list[idx]];
     values[fieldKey] = list;
   }
 
@@ -226,7 +235,12 @@
           <span>Enabled</span>
         </label>
       {:else if field.type === 'colour'}
-        <input id={`sf-${field.key}`} type="color" bind:value={values[field.key]} />
+        <ColourInput
+          id={`sf-${field.key}`}
+          value={String(values[field.key] ?? '')}
+          allowEmpty={!field.required && field.defaultValue === undefined}
+          onchange={(val) => (values[field.key] = val)}
+        />
       {:else if field.type === 'select'}
         {@const opts = field.dynamicOptionsEndpoint ? (dynamicOptions[field.key] ?? []) : (field.options ?? [])}
         <select id={`sf-${field.key}`} bind:value={values[field.key]}>
@@ -262,6 +276,17 @@
             <div class="group-row">
               <div class="group-fields">
                 {#each field.fields ?? [] as sub (sub.key)}
+                  {#if sub.type === 'colour'}
+                    <div class="sub-field">
+                      <span>{sub.label}</span>
+                      <ColourInput
+                        value={String(row[sub.key] ?? '')}
+                        placeholder="Optional hex"
+                        allowEmpty={!sub.required}
+                        onchange={(val) => updateGroupCell(field.key, rIdx, sub.key, val)}
+                      />
+                    </div>
+                  {:else}
                   <label class="sub-field">
                     <span>{sub.label}</span>
                     {#if sub.type === 'toggle'}
@@ -269,12 +294,6 @@
                         type="checkbox"
                         checked={Boolean(row[sub.key])}
                         onchange={(e) => updateGroupCell(field.key, rIdx, sub.key, (e.currentTarget as HTMLInputElement).checked)}
-                      />
-                    {:else if sub.type === 'colour'}
-                      <input
-                        type="color"
-                        value={String(row[sub.key] ?? '#2563eb')}
-                        oninput={(e) => updateGroupCell(field.key, rIdx, sub.key, (e.currentTarget as HTMLInputElement).value)}
                       />
                     {:else if sub.type === 'select'}
                       <select
@@ -294,11 +313,34 @@
                       />
                     {/if}
                   </label>
+                  {/if}
                 {/each}
               </div>
-              <button type="button" class="icon-btn danger" aria-label="Remove row" onclick={() => removeGroupRow(field.key, rIdx)}>
-                <Icon name="delete" size={18} />
-              </button>
+              <div class="group-row-actions">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  title="Move up"
+                  aria-label="Move row up"
+                  disabled={rIdx === 0}
+                  onclick={() => moveGroupRow(field.key, rIdx, -1)}
+                >
+                  <Icon name="arrow-up" size={18} />
+                </button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  title="Move down"
+                  aria-label="Move row down"
+                  disabled={rIdx === rows.length - 1}
+                  onclick={() => moveGroupRow(field.key, rIdx, 1)}
+                >
+                  <Icon name="arrow-down" size={18} />
+                </button>
+                <button type="button" class="icon-btn danger" title="Remove row" aria-label="Remove row" onclick={() => removeGroupRow(field.key, rIdx)}>
+                  <Icon name="delete" size={18} />
+                </button>
+              </div>
             </div>
           {/each}
           <button type="button" onclick={() => addGroupRow(field)}>
@@ -417,6 +459,12 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px;
+  }
+  .group-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
   }
   .sub-field {
     display: flex;

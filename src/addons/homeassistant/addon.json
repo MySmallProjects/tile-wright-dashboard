@@ -80,7 +80,7 @@
             "key": "colourRules",
             "label": "Colour Rules",
             "type": "group",
-            "helpText": "Evaluated in order (e.g. > 150 warning, > 300 critical).",
+            "helpText": "Evaluated top to bottom; the last matching rule wins (e.g. > 150 warning, > 300 critical).",
             "fields": [
               {
                 "key": "operator",
@@ -108,7 +108,7 @@
                   { "value": "critical", "label": "Critical" }
                 ]
               },
-              { "key": "customColour", "label": "Custom colour", "type": "text", "helpText": "Optional CSS hex" }
+              { "key": "customColour", "label": "Custom colour", "type": "colour", "helpText": "Optional CSS hex" }
             ]
           }
         ]
@@ -322,6 +322,115 @@
             "type": "toggle",
             "defaultValue": false,
             "helpText": "Display status only; disables clicking to control the entity."
+          }
+        ]
+      },
+      {
+        "id": "graph",
+        "name": "HA Graph",
+        "description": "Visualises a live Home Assistant numeric entity as a graph (e.g. half-circle gauge) with min/max range and colour rules.",
+        "icon": "chart-line",
+        "element": { "tagName": "tw-addon-ha-graph", "script": "ha-graph-tile.js" },
+        "defaultSize": { "w": 4, "h": 3 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 12, "h": 8 },
+        "settingsSchema": [
+          {
+            "key": "entityId",
+            "label": "Entity (from Home Assistant)",
+            "type": "select",
+            "dynamicOptionsEndpoint": "entities",
+            "helpText": "Populated automatically once Home Assistant URL and token are configured in Settings → Addons."
+          },
+          {
+            "key": "manualEntityId",
+            "label": "Or enter Entity ID manually",
+            "type": "text",
+            "helpText": "e.g. sensor.living_room_humidity"
+          },
+          {
+            "key": "title",
+            "label": "Title (optional)",
+            "type": "text",
+            "helpText": "Leave blank to use the Home Assistant entity's friendly name."
+          },
+          {
+            "key": "graphType",
+            "label": "Graph type",
+            "type": "select",
+            "defaultValue": "gauge-simple",
+            "options": [
+              { "value": "gauge-simple", "label": "Gauge Simple" }
+            ]
+          },
+          {
+            "key": "minValue",
+            "label": "Minimum value",
+            "type": "number",
+            "defaultValue": 0
+          },
+          {
+            "key": "maxValue",
+            "label": "Maximum value",
+            "type": "number",
+            "defaultValue": 100
+          },
+          { "key": "unitOverride", "label": "Unit override (optional)", "type": "text" },
+          {
+            "key": "valueFormat",
+            "label": "Value format (optional)",
+            "type": "text",
+            "helpText": "Format numbers (e.g. #,##0.00, 0.000, $ #,###.00, 0.00 W). Leave blank for raw value.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide"
+          },
+          {
+            "key": "useCustomColour",
+            "label": "Use custom gauge colour",
+            "type": "toggle",
+            "defaultValue": false
+          },
+          {
+            "key": "fillColour",
+            "label": "Gauge colour",
+            "type": "colour",
+            "defaultValue": "#22c55e",
+            "visibleWhen": { "key": "useCustomColour", "equals": true }
+          },
+          {
+            "key": "colourRules",
+            "label": "Colour Rules",
+            "type": "group",
+            "helpText": "Evaluated top to bottom; the last matching rule wins (e.g. > 70 warning, > 90 critical).",
+            "fields": [
+              {
+                "key": "operator",
+                "label": "Op",
+                "type": "select",
+                "defaultValue": ">",
+                "options": [
+                  { "value": ">", "label": ">" },
+                  { "value": ">=", "label": ">=" },
+                  { "value": "<", "label": "<" },
+                  { "value": "<=", "label": "<=" },
+                  { "value": "==", "label": "==" },
+                  { "value": "!=", "label": "!=" }
+                ]
+              },
+              { "key": "threshold", "label": "Value", "type": "text" },
+              {
+                "key": "semanticState",
+                "label": "State",
+                "type": "select",
+                "defaultValue": "warning",
+                "options": [
+                  { "value": "normal", "label": "Normal" },
+                  { "value": "warning", "label": "Warning" },
+                  { "value": "critical", "label": "Critical" }
+                ]
+              },
+              { "key": "customColour", "label": "Custom colour", "type": "colour", "helpText": "Optional CSS hex" }
+            ]
           }
         ]
       }
