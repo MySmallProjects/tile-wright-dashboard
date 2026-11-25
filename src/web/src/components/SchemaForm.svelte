@@ -288,6 +288,7 @@
                     {:else}
                       <input
                         type={sub.type === 'number' ? 'number' : 'text'}
+                        step={sub.type === 'number' ? 'any' : undefined}
                         value={String(row[sub.key] ?? '')}
                         oninput={(e) => updateGroupCell(field.key, rIdx, sub.key, (e.currentTarget as HTMLInputElement).value)}
                       />

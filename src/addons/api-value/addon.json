@@ -78,6 +78,61 @@
             ]
           }
         ]
+      },
+      {
+        "id": "api-portfolio",
+        "name": "API Portfolio",
+        "description": "Fetches a JSON API once and displays holding totals (price × qty) with an optional grand total.",
+        "icon": "chart-line",
+        "element": { "tagName": "tw-addon-api-portfolio", "script": "api-portfolio-tile.js" },
+        "defaultSize": { "w": 6, "h": 2 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 8 },
+        "settingsSchema": [
+          { "key": "title", "label": "Header title (optional)", "type": "text" },
+          { "key": "apiUrl", "label": "JSON API URL", "type": "url", "required": true, "helpText": "Fetched once by the server (CORS-free)." },
+          { "key": "refreshInterval", "label": "Refresh interval", "type": "duration", "defaultValue": "2h" },
+          { "key": "showUpdated", "label": "Show updated time", "type": "toggle", "defaultValue": true },
+          { "key": "showGrandTotal", "label": "Show grand total", "type": "toggle", "defaultValue": true },
+          {
+            "key": "grandTotalLabel",
+            "label": "Grand total label",
+            "type": "text",
+            "defaultValue": "Total",
+            "visibleWhen": { "key": "showGrandTotal", "equals": true }
+          },
+          {
+            "key": "grandTotalFormat",
+            "label": "Grand total format (optional)",
+            "type": "text",
+            "helpText": "Format string (e.g. £#,##0.00, $ #,###.00). Leave blank to use the first item's format.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide",
+            "visibleWhen": { "key": "showGrandTotal", "equals": true }
+          },
+          {
+            "key": "grandTotalColour",
+            "label": "Grand total colour",
+            "type": "colour",
+            "defaultValue": "#22c55e",
+            "visibleWhen": { "key": "showGrandTotal", "equals": true }
+          },
+          {
+            "key": "items",
+            "label": "Items",
+            "type": "group",
+            "helpText": "Total format string supports number patterns like £#,##0.00, $ #,###.00, 0.00.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide",
+            "fields": [
+              { "key": "iconUrl", "label": "Icon URL", "type": "url" },
+              { "key": "name", "label": "Name", "type": "text" },
+              { "key": "priceJson", "label": "Price JSON", "type": "text" },
+              { "key": "qty", "label": "Qty", "type": "number" },
+              { "key": "totalFormat", "label": "Total format string", "type": "text" }
+            ]
+          }
+        ]
       }
     ]
   }
