@@ -433,6 +433,110 @@
             ]
           }
         ]
+      },
+      {
+        "id": "graph-bars",
+        "name": "HA Graph Bars",
+        "description": "Displays multiple live Home Assistant entities as horizontal progress bars with icons, min/max scales, and shared colour rules.",
+        "icon": "chart-line",
+        "element": { "tagName": "tw-addon-ha-graph-bars", "script": "ha-graph-bars-tile.js" },
+        "defaultSize": { "w": 4, "h": 4 },
+        "minSize": { "w": 2, "h": 2 },
+        "maxSize": { "w": 12, "h": 10 },
+        "settingsSchema": [
+          {
+            "key": "title",
+            "label": "Title (optional)",
+            "type": "text",
+            "helpText": "Leave blank to hide the header and let the bars fill the tile."
+          },
+          {
+            "key": "graphType",
+            "label": "Graph type",
+            "type": "select",
+            "defaultValue": "bar-style-1",
+            "options": [
+              { "value": "bar-style-1", "label": "Bar style 1" }
+            ]
+          },
+          {
+            "key": "showIcons",
+            "label": "Show icons",
+            "type": "toggle",
+            "defaultValue": true
+          },
+          {
+            "key": "useCustomColour",
+            "label": "Use custom bar colour",
+            "type": "toggle",
+            "defaultValue": false
+          },
+          {
+            "key": "barColour",
+            "label": "Bar colour",
+            "type": "colour",
+            "defaultValue": "#f59e0b",
+            "visibleWhen": { "key": "useCustomColour", "equals": true }
+          },
+          {
+            "key": "items",
+            "label": "Bars",
+            "type": "group",
+            "helpText": "Add one or more Home Assistant entities. Value format supports patterns like #,##0.00, 0.0, 0.00 W.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide",
+            "fields": [
+              {
+                "key": "entityId",
+                "label": "Entity (HA)",
+                "type": "select",
+                "dynamicOptionsEndpoint": "entities"
+              },
+              { "key": "manualEntityId", "label": "Manual Entity ID", "type": "text" },
+              { "key": "name", "label": "Name (optional)", "type": "text" },
+              { "key": "icon", "label": "Icon (optional)", "type": "icon" },
+              { "key": "minValue", "label": "Min", "type": "number", "defaultValue": 0 },
+              { "key": "maxValue", "label": "Max", "type": "number", "defaultValue": 100 },
+              { "key": "unitOverride", "label": "Unit override", "type": "text" },
+              { "key": "valueFormat", "label": "Value format", "type": "text" }
+            ]
+          },
+          {
+            "key": "colourRules",
+            "label": "Colour Rules",
+            "type": "group",
+            "helpText": "Shared across all bars in this tile. Evaluated top to bottom by value; the last matching rule wins (e.g. > 70 warning, > 90 critical).",
+            "fields": [
+              {
+                "key": "operator",
+                "label": "Op",
+                "type": "select",
+                "defaultValue": ">",
+                "options": [
+                  { "value": ">", "label": ">" },
+                  { "value": ">=", "label": ">=" },
+                  { "value": "<", "label": "<" },
+                  { "value": "<=", "label": "<=" },
+                  { "value": "==", "label": "==" },
+                  { "value": "!=", "label": "!=" }
+                ]
+              },
+              { "key": "threshold", "label": "Value", "type": "text" },
+              {
+                "key": "semanticState",
+                "label": "State",
+                "type": "select",
+                "defaultValue": "warning",
+                "options": [
+                  { "value": "normal", "label": "Normal" },
+                  { "value": "warning", "label": "Warning" },
+                  { "value": "critical", "label": "Critical" }
+                ]
+              },
+              { "key": "customColour", "label": "Custom colour", "type": "colour", "helpText": "Optional CSS hex" }
+            ]
+          }
+        ]
       }
     ]
   }

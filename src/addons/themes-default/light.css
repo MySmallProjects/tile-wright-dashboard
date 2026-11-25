@@ -15,4 +15,33 @@
   --tw-tile-radius: 16px;
   --tw-tile-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
   --tw-chrome-bg: rgba(255, 255, 255, 0.92);
+
+  /* Graph & bar tile theme hooks (shared across HA Graph / HA Graph Bars)
+   * --tw-graph-bar-color:       Default bar fill colour (falls back to --tw-accent)
+   * --tw-graph-bar-track:       Unfilled bar track (unset = auto-tinted from active bar colour)
+   * --tw-graph-bar-radius:      Bar corner radius (999px = pill, 6px = rounded rect, 0 = square)
+   * --tw-graph-bar-height:      Bar height
+   * --tw-graph-bar-gap:         Vertical gap between bar rows
+   * --tw-graph-bar-row-bg:      Background of each bar row container
+   * --tw-graph-bar-row-radius:  Corner radius of each bar row container
+   * --tw-graph-bar-row-padding: Inner padding of each bar row container
+   * --tw-graph-bar-icon-color:  Left icon colour
+   * --tw-graph-bar-text:        Label & value text colour inside the bar
+   * --tw-graph-bar-text-shadow: Text shadow for contrast across filled/unfilled bar regions
+   * --tw-gauge-track:           Unfilled arc colour for HA Graph gauges
+   *
+   * Shadow DOM ::part() hooks available on tw-addon-ha-graph-bars:
+   *   ::part(row), ::part(icon), ::part(bar), ::part(fill), ::part(label), ::part(value)
+   */
+  --tw-graph-bar-color: var(--tw-accent);
+  --tw-graph-bar-radius: 999px;
+  --tw-graph-bar-height: 30px;
+  --tw-graph-bar-gap: 8px;
+  --tw-graph-bar-row-bg: rgba(15, 23, 42, 0.04);
+  --tw-graph-bar-row-radius: 12px;
+  --tw-graph-bar-row-padding: 8px 10px;
+  --tw-graph-bar-icon-color: var(--tw-text);
+  --tw-graph-bar-text: #0f172a;
+  --tw-graph-bar-text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
+  --tw-gauge-track: rgba(15, 23, 42, 0.14);
 }

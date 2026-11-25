@@ -64,12 +64,27 @@
 
   onMount(async () => {
     if (!addonId) return;
+    const cache = new Map<string, SelectOptionSpec[]>();
+    async function loadEndpoint(endpoint: string): Promise<SelectOptionSpec[]> {
+      if (cache.has(endpoint)) return cache.get(endpoint)!;
+      try {
+        const opts = await api.getDynamicOptions(addonId!, endpoint);
+        cache.set(endpoint, opts);
+        return opts;
+      } catch {
+        cache.set(endpoint, []);
+        return [];
+      }
+    }
+
     for (const field of schema) {
       if (field.type === 'select' && field.dynamicOptionsEndpoint) {
-        try {
-          dynamicOptions[field.key] = await api.getDynamicOptions(addonId, field.dynamicOptionsEndpoint);
-        } catch {
-          dynamicOptions[field.key] = [];
+        dynamicOptions[field.key] = await loadEndpoint(field.dynamicOptionsEndpoint);
+      } else if (field.type === 'group' && Array.isArray(field.fields)) {
+        for (const sub of field.fields) {
+          if (sub.type === 'select' && sub.dynamicOptionsEndpoint) {
+            dynamicOptions[`${field.key}.${sub.key}`] = await loadEndpoint(sub.dynamicOptionsEndpoint);
+          }
         }
       }
     }
@@ -286,6 +301,15 @@
                         onchange={(val) => updateGroupCell(field.key, rIdx, sub.key, val)}
                       />
                     </div>
+                  {:else if sub.type === 'icon'}
+                    <div class="sub-field">
+                      <span>{sub.label}</span>
+                      <IconPicker
+                        compact={true}
+                        value={String(row[sub.key] ?? '')}
+                        onSelect={(refId) => updateGroupCell(field.key, rIdx, sub.key, refId)}
+                      />
+                    </div>
                   {:else}
                   <label class="sub-field">
                     <span>{sub.label}</span>
@@ -296,11 +320,17 @@
                         onchange={(e) => updateGroupCell(field.key, rIdx, sub.key, (e.currentTarget as HTMLInputElement).checked)}
                       />
                     {:else if sub.type === 'select'}
+                      {@const subOpts = sub.dynamicOptionsEndpoint
+                        ? (dynamicOptions[`${field.key}.${sub.key}`] ?? [])
+                        : (sub.options ?? [])}
                       <select
                         value={String(row[sub.key] ?? '')}
                         onchange={(e) => updateGroupCell(field.key, rIdx, sub.key, (e.currentTarget as HTMLSelectElement).value)}
                       >
-                        {#each sub.options ?? [] as opt}
+                        {#if sub.dynamicOptionsEndpoint}
+                          <option value="">-- Choose --</option>
+                        {/if}
+                        {#each subOpts as opt}
                           <option value={opt.value}>{opt.label}</option>
                         {/each}
                       </select>
