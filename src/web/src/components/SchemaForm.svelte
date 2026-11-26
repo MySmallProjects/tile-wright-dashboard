@@ -120,10 +120,10 @@
     values[fieldKey] = list;
   }
 
-  function isFieldVisible(field: SettingsFieldSchema): boolean {
+  function isFieldVisible(field: SettingsFieldSchema, scope: Record<string, unknown> = values): boolean {
     const cond = field.visibleWhen;
     if (!cond || !cond.key) return true;
-    const val = values[cond.key];
+    const val = scope[cond.key];
     if (cond.notEquals !== undefined && cond.notEquals !== null && val === cond.notEquals) {
       return false;
     }
@@ -291,6 +291,7 @@
             <div class="group-row">
               <div class="group-fields">
                 {#each field.fields ?? [] as sub (sub.key)}
+                  {#if isFieldVisible(sub, row)}
                   {#if sub.type === 'colour'}
                     <div class="sub-field">
                       <span>{sub.label}</span>
@@ -343,6 +344,7 @@
                       />
                     {/if}
                   </label>
+                  {/if}
                   {/if}
                 {/each}
               </div>

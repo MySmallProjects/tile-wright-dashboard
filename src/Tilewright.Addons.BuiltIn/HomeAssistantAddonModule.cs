@@ -14,7 +14,11 @@ public sealed record HaEntityState(
     string? FriendlyName,
     string? Unit,
     string? Icon,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    int? Brightness = null,
+    double? Min = null,
+    double? Max = null,
+    double? Step = null);
 
 public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IActionHandler, IDynamicOptionsProvider
 {
@@ -110,6 +114,11 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
                 friendlyName = state.FriendlyName,
                 unit = state.Unit,
                 icon = state.Icon,
+                brightness = state.Brightness,
+                brightnessPct = ToBrightnessPct(state.Brightness),
+                min = state.Min,
+                max = state.Max,
+                step = state.Step,
                 semanticState = colourMatch.SemanticState,
                 customColour = colourMatch.CustomColour,
                 updatedAt = state.UpdatedAt
@@ -120,7 +129,7 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
         {
             var domain = entityId.Split('.', 2)[0];
             var service = GetString(payload.Value, "service") ?? "toggle";
-            var ok = await CallServiceRestAsync(host, baseUrl, token, domain, service, entityId, ct);
+            var ok = await CallServiceRestAsync(host, baseUrl, token, domain, service, entityId, null, ct);
             if (!ok) return new { error = $"Failed to call {domain}.{service}." };
 
             var refreshed = await FetchSingleStateRestAsync(host, baseUrl, token, entityId, ct);
@@ -129,7 +138,90 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
                 _states[entityId] = refreshed;
                 await host.Push.PushToSourceAsync($"ha:{entityId}", refreshed, ct);
             }
-            return new { ok = true, state = refreshed?.State };
+            return new
+            {
+                ok = true,
+                state = refreshed?.State,
+                brightness = refreshed?.Brightness,
+                brightnessPct = ToBrightnessPct(refreshed?.Brightness)
+            };
+        }
+
+        if (string.Equals(action, "set-brightness", StringComparison.OrdinalIgnoreCase))
+        {
+            var domain = entityId.Split('.', 2)[0];
+            var pct = GetInt(payload.Value, "brightnessPct") ?? 0;
+            pct = Math.Clamp(pct, 0, 100);
+
+            bool ok;
+            if (pct <= 0)
+            {
+                ok = await CallServiceRestAsync(host, baseUrl, token, domain, "turn_off", entityId, null, ct);
+            }
+            else
+            {
+                ok = await CallServiceRestAsync(
+                    host,
+                    baseUrl,
+                    token,
+                    domain,
+                    "turn_on",
+                    entityId,
+                    new Dictionary<string, object> { ["brightness_pct"] = pct },
+                    ct);
+            }
+
+            if (!ok) return new { error = $"Failed to set brightness on {entityId}." };
+
+            var refreshed = await FetchSingleStateRestAsync(host, baseUrl, token, entityId, ct);
+            if (refreshed is not null)
+            {
+                _states[entityId] = refreshed;
+                await host.Push.PushToSourceAsync($"ha:{entityId}", refreshed, ct);
+            }
+            return new
+            {
+                ok = true,
+                state = refreshed?.State,
+                brightness = refreshed?.Brightness,
+                brightnessPct = ToBrightnessPct(refreshed?.Brightness) ?? pct
+            };
+        }
+
+        if (string.Equals(action, "set-value", StringComparison.OrdinalIgnoreCase))
+        {
+            var domain = entityId.Split('.', 2)[0];
+            var value = GetDouble(payload.Value, "value");
+            if (value is null || double.IsNaN(value.Value) || double.IsInfinity(value.Value))
+            {
+                return new { error = "Missing or invalid numeric value." };
+            }
+
+            var ok = await CallServiceRestAsync(
+                host,
+                baseUrl,
+                token,
+                domain,
+                "set_value",
+                entityId,
+                new Dictionary<string, object> { ["value"] = value.Value },
+                ct);
+            if (!ok) return new { error = $"Failed to set value on {entityId}." };
+
+            var refreshed = await FetchSingleStateRestAsync(host, baseUrl, token, entityId, ct);
+            if (refreshed is not null)
+            {
+                _states[entityId] = refreshed;
+                await host.Push.PushToSourceAsync($"ha:{entityId}", refreshed, ct);
+            }
+            return new
+            {
+                ok = true,
+                state = refreshed?.State ?? value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                min = refreshed?.Min,
+                max = refreshed?.Max,
+                step = refreshed?.Step
+            };
         }
 
         return new { error = $"Unknown action '{action}'." };
@@ -288,6 +380,7 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
         string domain,
         string service,
         string entityId,
+        Dictionary<string, object>? extraFields,
         CancellationToken ct)
     {
         try
@@ -298,8 +391,16 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
                 HttpMethod.Post,
                 $"{baseUrl}/api/services/{Uri.EscapeDataString(domain)}/{Uri.EscapeDataString(service)}");
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var body = new Dictionary<string, object> { ["entity_id"] = entityId };
+            if (extraFields is not null)
+            {
+                foreach (var (k, v) in extraFields)
+                {
+                    body[k] = v;
+                }
+            }
             req.Content = new StringContent(
-                JsonSerializer.Serialize(new { entity_id = entityId }),
+                JsonSerializer.Serialize(body),
                 Encoding.UTF8,
                 "application/json");
 
@@ -321,15 +422,28 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
         string? friendly = null;
         string? unit = null;
         string? icon = null;
+        int? brightness = null;
+        double? min = null;
+        double? max = null;
+        double? step = null;
 
         if (el.TryGetProperty("attributes", out var attrs) && attrs.ValueKind == JsonValueKind.Object)
         {
             friendly = GetString(attrs, "friendly_name");
             unit = GetString(attrs, "unit_of_measurement");
             icon = GetString(attrs, "icon");
+            if (attrs.TryGetProperty("brightness", out var bProp) &&
+                bProp.ValueKind == JsonValueKind.Number &&
+                bProp.TryGetInt32(out var bVal))
+            {
+                brightness = Math.Clamp(bVal, 0, 255);
+            }
+            min = GetDouble(attrs, "min");
+            max = GetDouble(attrs, "max");
+            step = GetDouble(attrs, "step");
         }
 
-        return new HaEntityState(id, state, friendly, unit, icon, DateTimeOffset.UtcNow);
+        return new HaEntityState(id, state, friendly, unit, icon, DateTimeOffset.UtcNow, brightness, min, max, step);
     }
 
     private static List<ColourRule> ParseRules(JsonElement payload)
@@ -379,4 +493,28 @@ public sealed class HomeAssistantAddonModule : IAddonModule, IDataProvider, IAct
         el.ValueKind == JsonValueKind.Object && el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String
             ? v.GetString()
             : null;
+
+    private static int? GetInt(JsonElement el, string prop)
+    {
+        if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(prop, out var v)) return null;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)) return i;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d)) return (int)Math.Round(d);
+        if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var parsed)) return parsed;
+        return null;
+    }
+
+    private static double? GetDouble(JsonElement el, string prop)
+    {
+        if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(prop, out var v)) return null;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var d)) return d;
+        if (v.ValueKind == JsonValueKind.String &&
+            double.TryParse(v.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        {
+            return parsed;
+        }
+        return null;
+    }
+
+    private static int? ToBrightnessPct(int? brightness) =>
+        brightness.HasValue ? (int)Math.Round(Math.Clamp(brightness.Value, 0, 255) * 100.0 / 255.0) : null;
 }

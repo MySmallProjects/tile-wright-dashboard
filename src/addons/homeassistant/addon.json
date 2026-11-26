@@ -335,6 +335,166 @@
         ]
       },
       {
+        "id": "control-multi",
+        "name": "HA Controls (Multi)",
+        "description": "Displays and controls multiple Home Assistant devices (toggles, switches, buttons, light dimmers, and read-only values) with selectable layouts.",
+        "icon": "home",
+        "element": { "tagName": "tw-addon-ha-control-multi", "script": "ha-control-multi-tile.js" },
+        "defaultSize": { "w": 4, "h": 4 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 10 },
+        "settingsSchema": [
+          {
+            "key": "title",
+            "label": "Title (optional)",
+            "type": "text",
+            "helpText": "Leave blank to hide the header and let the devices fill the tile."
+          },
+          {
+            "key": "layout",
+            "label": "Layout",
+            "type": "select",
+            "defaultValue": "inline",
+            "options": [
+              { "value": "inline", "label": "Single-line rows (icon, name, control)" },
+              { "value": "stacked", "label": "Stacked rows (icon + name, control below)" },
+              { "value": "grid", "label": "Grid (icon + name, control below)" }
+            ]
+          },
+          {
+            "key": "gridColumns",
+            "label": "Grid columns",
+            "type": "select",
+            "defaultValue": "auto",
+            "visibleWhen": { "key": "layout", "equals": "grid" },
+            "options": [
+              { "value": "auto", "label": "Auto" },
+              { "value": "2", "label": "2 columns" },
+              { "value": "3", "label": "3 columns" },
+              { "value": "4", "label": "4 columns" }
+            ]
+          },
+          {
+            "key": "items",
+            "label": "Devices",
+            "type": "group",
+            "helpText": "Add toggles, 2-state switches, button actions, light dimmers, or read-only text/power values. Leave icons blank to hide them.",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide",
+            "fields": [
+              {
+                "key": "entityId",
+                "label": "Entity (HA)",
+                "type": "select",
+                "dynamicOptionsEndpoint": "entities"
+              },
+              { "key": "manualEntityId", "label": "Manual Entity ID", "type": "text" },
+              {
+                "key": "deviceType",
+                "label": "Type",
+                "type": "select",
+                "defaultValue": "toggle",
+                "options": [
+                  { "value": "toggle", "label": "Toggle (icon / button)" },
+                  { "value": "switch", "label": "2-state switch (On/Off)" },
+                  { "value": "button", "label": "Button action (Press / Trigger)" },
+                  { "value": "dimmer", "label": "Light dimmer (slider)" },
+                  { "value": "number", "label": "Number (slider)" },
+                  { "value": "text", "label": "Text / Value (read-only)" }
+                ]
+              },
+              { "key": "name", "label": "Name (optional)", "type": "text" },
+              {
+                "key": "icon",
+                "label": "Icon (optional)",
+                "type": "icon",
+                "visibleWhen": { "key": "deviceType", "notEquals": "toggle" }
+              },
+              {
+                "key": "iconOn",
+                "label": "On icon (optional)",
+                "type": "icon",
+                "visibleWhen": { "key": "deviceType", "equals": "toggle" }
+              },
+              {
+                "key": "iconOff",
+                "label": "Off icon (optional)",
+                "type": "icon",
+                "visibleWhen": { "key": "deviceType", "equals": "toggle" }
+              },
+              {
+                "key": "iconSize",
+                "label": "Icon size",
+                "type": "select",
+                "defaultValue": "xsmall",
+                "visibleWhen": { "key": "deviceType", "equals": "toggle" },
+                "options": [
+                  { "value": "xsmall", "label": "X-Small (24x24)" },
+                  { "value": "small", "label": "Small (32x32)" },
+                  { "value": "medium", "label": "Medium (48x48)" },
+                  { "value": "large", "label": "Large (64x64)" }
+                ]
+              },
+              {
+                "key": "minValue",
+                "label": "Min (optional, defaults to HA)",
+                "type": "number",
+                "visibleWhen": { "key": "deviceType", "equals": "number" }
+              },
+              {
+                "key": "maxValue",
+                "label": "Max (optional, defaults to HA)",
+                "type": "number",
+                "visibleWhen": { "key": "deviceType", "equals": "number" }
+              },
+              {
+                "key": "step",
+                "label": "Step (optional, defaults to HA)",
+                "type": "number",
+                "visibleWhen": { "key": "deviceType", "equals": "number" }
+              },
+              {
+                "key": "service",
+                "label": "Action service",
+                "type": "select",
+                "defaultValue": "press",
+                "visibleWhen": { "key": "deviceType", "equals": "button" },
+                "options": [
+                  { "value": "press", "label": "Press (Button)" },
+                  { "value": "turn_on", "label": "Turn On (Script / Scene)" },
+                  { "value": "toggle", "label": "Toggle" },
+                  { "value": "turn_off", "label": "Turn Off" }
+                ]
+              },
+              {
+                "key": "buttonLabel",
+                "label": "Button label (optional)",
+                "type": "text",
+                "visibleWhen": { "key": "deviceType", "equals": "button" }
+              },
+              {
+                "key": "unitOverride",
+                "label": "Unit override",
+                "type": "text",
+                "visibleWhen": { "key": "deviceType", "equals": "text" }
+              },
+              {
+                "key": "valueFormat",
+                "label": "Value format",
+                "type": "text",
+                "visibleWhen": { "key": "deviceType", "equals": "text" }
+              },
+              {
+                "key": "showLastUpdated",
+                "label": "Show updated time",
+                "type": "toggle",
+                "defaultValue": false
+              }
+            ]
+          }
+        ]
+      },
+      {
         "id": "control-split",
         "name": "HA Control (split)",
         "description": "Split-row Home Assistant control with a device icon, On/Off toggle status icon, and optional bottom label.",
