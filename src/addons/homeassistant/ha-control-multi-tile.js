@@ -481,20 +481,24 @@ class TwAddonHaControlMulti extends HTMLElement {
           const pct = this._getBrightnessPct(st);
           const pctText = pct > 0 ? `${pct}%` : 'Off';
           controlHtml = `
-            <div class="dimmer-wrap">
-              <input
-                type="range"
-                class="dimmer-slider"
-                min="0"
-                max="100"
-                step="1"
-                value="${pct}"
-                style="--pct: ${pct}%;"
-                data-slider-kind="dimmer"
-                data-entity="${this._escapeHtml(item.entityId)}"
-                aria-label="${this._escapeHtml(label)} brightness"
-              />
-              <span class="dimmer-pct" data-pct-for="${this._escapeHtml(item.entityId)}">${pctText}</span>
+            <div class="dimmer-wrap" part="slider-wrap">
+              <div class="slider-track" part="slider" style="--pct: ${pct}%;">
+                <div class="slider-fill" part="slider-fill">
+                  <span class="slider-handle" part="slider-handle"></span>
+                </div>
+                <input
+                  type="range"
+                  class="dimmer-slider"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="${pct}"
+                  data-slider-kind="dimmer"
+                  data-entity="${this._escapeHtml(item.entityId)}"
+                  aria-label="${this._escapeHtml(label)} brightness"
+                />
+              </div>
+              <span class="dimmer-pct" part="slider-value" data-pct-for="${this._escapeHtml(item.entityId)}">${pctText}</span>
             </div>
           `;
           break;
@@ -513,21 +517,25 @@ class TwAddonHaControlMulti extends HTMLElement {
             ? `${curVal}${unit ? ` ${unit}` : ''}`
             : '…';
           controlHtml = `
-            <div class="dimmer-wrap">
-              <input
-                type="range"
-                class="dimmer-slider"
-                min="${min}"
-                max="${max}"
-                step="${step}"
-                value="${curVal}"
-                style="--pct: ${pct.toFixed(2)}%;"
-                data-slider-kind="number"
-                data-unit="${this._escapeHtml(unit)}"
-                data-entity="${this._escapeHtml(item.entityId)}"
-                aria-label="${this._escapeHtml(label)} value"
-              />
-              <span class="dimmer-pct" data-pct-for="${this._escapeHtml(item.entityId)}">${this._escapeHtml(displayText)}</span>
+            <div class="dimmer-wrap" part="slider-wrap">
+              <div class="slider-track" part="slider" style="--pct: ${pct.toFixed(2)}%;">
+                <div class="slider-fill" part="slider-fill">
+                  <span class="slider-handle" part="slider-handle"></span>
+                </div>
+                <input
+                  type="range"
+                  class="dimmer-slider"
+                  min="${min}"
+                  max="${max}"
+                  step="${step}"
+                  value="${curVal}"
+                  data-slider-kind="number"
+                  data-unit="${this._escapeHtml(unit)}"
+                  data-entity="${this._escapeHtml(item.entityId)}"
+                  aria-label="${this._escapeHtml(label)} value"
+                />
+              </div>
+              <span class="dimmer-pct" part="slider-value" data-pct-for="${this._escapeHtml(item.entityId)}">${this._escapeHtml(displayText)}</span>
             </div>
           `;
           break;
@@ -635,7 +643,8 @@ class TwAddonHaControlMulti extends HTMLElement {
       const entityId = slider.getAttribute('data-entity');
       const kind = slider.getAttribute('data-slider-kind') || 'dimmer';
       const unit = slider.getAttribute('data-unit') || '';
-      const pctEl = slider.parentElement?.querySelector('.dimmer-pct');
+      const trackEl = slider.closest('.slider-track');
+      const pctEl = slider.closest('.dimmer-wrap')?.querySelector('.dimmer-pct');
 
       slider.addEventListener('pointerdown', () => {
         this._draggingEntityId = entityId;
@@ -658,7 +667,7 @@ class TwAddonHaControlMulti extends HTMLElement {
         const min = Number(slider.min);
         const max = Number(slider.max);
         const pct = max > min ? Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100)) : 0;
-        slider.style.setProperty('--pct', `${pct.toFixed(2)}%`);
+        if (trackEl) trackEl.style.setProperty('--pct', `${pct.toFixed(2)}%`);
         if (pctEl) {
           if (kind === 'number') {
             pctEl.textContent = `${val}${unit ? ` ${unit}` : ''}`;
@@ -1039,7 +1048,7 @@ class TwAddonHaControlMulti extends HTMLElement {
           transform: translateX(20px);
         }
 
-        /* Light dimmer slider */
+        /* Light dimmer & number slider (pill-bar style) */
         .dimmer-wrap {
           display: flex;
           align-items: center;
@@ -1047,48 +1056,58 @@ class TwAddonHaControlMulti extends HTMLElement {
           width: 100%;
           min-width: 0;
         }
-        .dimmer-slider {
-          -webkit-appearance: none;
-          appearance: none;
+        .slider-track {
+          position: relative;
           flex: 1 1 0;
           min-width: 60px;
-          height: 8px;
-          border-radius: 999px;
-          background: linear-gradient(
-            to right,
-            var(--tw-accent) 0%,
-            var(--tw-accent) var(--pct, 0%),
-            color-mix(in srgb, var(--tw-text) 16%, transparent) var(--pct, 0%),
-            color-mix(in srgb, var(--tw-text) 16%, transparent) 100%
-          );
-          outline: none;
+          height: var(--tw-slider-height, 36px);
+          border-radius: var(--tw-slider-radius, 12px);
+          background: var(--tw-slider-track, color-mix(in srgb, var(--tw-slider-fill, var(--tw-accent)) 20%, transparent));
+          overflow: hidden;
+        }
+        .slider-track:has(.dimmer-slider:focus-visible) {
+          outline: 2px solid var(--tw-accent);
+          outline-offset: 2px;
+        }
+        .slider-fill {
+          position: absolute;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: var(--pct, 0%);
+          background: var(--tw-slider-fill, var(--tw-accent));
+          border-radius: var(--tw-slider-radius, 12px);
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 6px;
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .slider-handle {
+          width: var(--tw-slider-handle-width, 4px);
+          height: var(--tw-slider-handle-height, 50%);
+          min-height: 12px;
+          max-height: 24px;
+          border-radius: var(--tw-slider-handle-radius, 999px);
+          background: var(--tw-slider-handle-bg, #ffffff);
+          box-shadow: var(--tw-slider-handle-shadow, 0 1px 2px rgba(0, 0, 0, 0.25));
+          flex-shrink: 0;
+        }
+        .dimmer-slider {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          opacity: 0;
           cursor: pointer;
           touch-action: none;
-        }
-        .dimmer-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 2px solid var(--tw-accent);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-          cursor: pointer;
-        }
-        .dimmer-slider::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 2px solid var(--tw-accent);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-          cursor: pointer;
         }
         .dimmer-pct {
           font-size: 0.78rem;
           font-weight: 600;
-          color: var(--tw-text-muted);
+          color: var(--tw-slider-value-color, var(--tw-text-muted));
           font-variant-numeric: tabular-nums;
           min-width: 34px;
           text-align: right;

@@ -44,6 +44,38 @@
   --tw-graph-bar-text: #ffffff;
   --tw-graph-bar-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   --tw-gauge-track: rgba(148, 163, 184, 0.25);
+
+  /* Control slider theme hooks (HA Controls Multi: dimmer & number sliders)
+   * --tw-slider-height:        Track height
+   * --tw-slider-radius:        Track & fill corner radius (12px = rounded pill-bar, 999px = full pill, 0 = square)
+   * --tw-slider-fill:          Filled bar colour (falls back to --tw-accent)
+   * --tw-slider-track:         Unfilled track colour
+   * --tw-slider-handle-width:  Inset vertical handle width
+   * --tw-slider-handle-height: Inset vertical handle height (% or px)
+   * --tw-slider-handle-bg:     Inset handle colour
+   * --tw-slider-handle-radius: Inset handle corner radius
+   * --tw-slider-handle-shadow: Inset handle box-shadow
+   * --tw-slider-value-color:   Readout value text colour
+   *
+   * Shadow DOM ::part() hooks available on tw-addon-ha-control-multi:
+   *   ::part(slider-wrap), ::part(slider), ::part(slider-fill), ::part(slider-handle), ::part(slider-value)
+   */
+  --tw-slider-height: 36px;
+  --tw-slider-radius: 12px;
+  --tw-slider-fill: var(--tw-accent);
+  --tw-slider-track: rgba(56, 189, 248, 0.2);
+  --tw-slider-handle-width: 4px;
+  --tw-slider-handle-height: 50%;
+  --tw-slider-handle-bg: #ffffff;
+  --tw-slider-handle-radius: 999px;
+  --tw-slider-handle-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --tw-slider-value-color: var(--tw-text-muted);
+}
+[data-theme="dark"] tw-addon-ha-control-multi::part(slider) {
+  /* Custom slider element overrides for Dark theme */
+}
+[data-theme="dark"] tw-addon-ha-control-multi::part(slider-value) {
+  /* Custom slider value readout overrides for Dark theme */
 }
 [data-theme="dark"] tw-addon-clock::part(time) {
   color: orange;
