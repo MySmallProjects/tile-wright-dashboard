@@ -114,6 +114,121 @@
         ]
       },
       {
+        "id": "sensor-multi",
+        "name": "HA Sensors (Read)",
+        "description": "Displays multiple live Home Assistant entity states with selectable row layouts and colour rules.",
+        "icon": "lightning-bolt",
+        "element": { "tagName": "tw-addon-ha-sensor-multi", "script": "ha-sensor-multi-tile.js" },
+        "defaultSize": { "w": 4, "h": 4 },
+        "minSize": { "w": 2, "h": 1 },
+        "maxSize": { "w": 12, "h": 10 },
+        "settingsSchema": [
+          {
+            "key": "title",
+            "label": "Title (optional)",
+            "type": "text",
+            "helpText": "Leave blank to hide the header and let the sensors fill the tile."
+          },
+          {
+            "key": "layout",
+            "label": "Layout",
+            "type": "select",
+            "defaultValue": "stacked",
+            "options": [
+              { "value": "stacked", "label": "Stacked rows (icon + title, value below)" },
+              { "value": "grid", "label": "Grid (icon + title, value below)" },
+              { "value": "inline", "label": "Single-line rows (icon, name, value)" }
+            ]
+          },
+          {
+            "key": "gridColumns",
+            "label": "Grid columns",
+            "type": "select",
+            "defaultValue": "auto",
+            "visibleWhen": { "key": "layout", "equals": "grid" },
+            "options": [
+              { "value": "auto", "label": "Auto" },
+              { "value": "2", "label": "2 columns" },
+              { "value": "3", "label": "3 columns" },
+              { "value": "4", "label": "4 columns" }
+            ]
+          },
+          {
+            "key": "valueAlign",
+            "label": "Value alignment",
+            "type": "select",
+            "defaultValue": "right",
+            "options": [
+              { "value": "left", "label": "Left" },
+              { "value": "center", "label": "Center" },
+              { "value": "right", "label": "Right" }
+            ]
+          },
+          {
+            "key": "showIcons",
+            "label": "Show icons",
+            "type": "toggle",
+            "defaultValue": true
+          },
+          {
+            "key": "items",
+            "label": "Sensors",
+            "type": "group",
+            "helpText": "Add one or more Home Assistant entities. Value format supports numbers (e.g. #,##0.00, 0.00 W) or dates/times (e.g. HH:mm, relative).",
+            "helpLinkUrl": "/format-guide.html",
+            "helpLinkLabel": "Format guide",
+            "fields": [
+              {
+                "key": "entityId",
+                "label": "Entity (HA)",
+                "type": "select",
+                "dynamicOptionsEndpoint": "entities"
+              },
+              { "key": "manualEntityId", "label": "Manual Entity ID", "type": "text" },
+              { "key": "name", "label": "Name (optional)", "type": "text" },
+              { "key": "icon", "label": "Icon (optional)", "type": "icon" },
+              { "key": "unitOverride", "label": "Unit override", "type": "text" },
+              { "key": "valueFormat", "label": "Value format", "type": "text" }
+            ]
+          },
+          {
+            "key": "colourRules",
+            "label": "Colour Rules",
+            "type": "group",
+            "helpText": "Shared across all sensors in this tile. Evaluated top to bottom; the last matching rule wins (e.g. > 150 warning, > 300 critical).",
+            "fields": [
+              {
+                "key": "operator",
+                "label": "Op",
+                "type": "select",
+                "defaultValue": ">",
+                "options": [
+                  { "value": ">", "label": ">" },
+                  { "value": ">=", "label": ">=" },
+                  { "value": "<", "label": "<" },
+                  { "value": "<=", "label": "<=" },
+                  { "value": "==", "label": "==" },
+                  { "value": "!=", "label": "!=" }
+                ]
+              },
+              { "key": "threshold", "label": "Value", "type": "text" },
+              {
+                "key": "semanticState",
+                "label": "State",
+                "type": "select",
+                "defaultValue": "warning",
+                "options": [
+                  { "value": "normal", "label": "Normal" },
+                  { "value": "warning", "label": "Warning" },
+                  { "value": "critical", "label": "Critical" }
+                ]
+              },
+              { "key": "customColour", "label": "Custom colour", "type": "colour", "helpText": "Optional CSS hex" }
+            ]
+          }
+        ]
+      },
+      {
         "id": "control",
         "name": "HA Control (Toggle)",
         "description": "Toggle or trigger a Home Assistant switch, light, script, or scene with live state.",
