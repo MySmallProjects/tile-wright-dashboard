@@ -66,8 +66,10 @@
   let savingTileSettings = $state(false);
 
   const clone = <T>(val: T): T => structuredClone($state.snapshot(val)) as T;
+  const isTileEnabled = (tile: TileLayoutItem): boolean => tile.enabled !== false;
 
   let allPickerTiles = $derived(addonOverview.availableTiles ?? []);
+  let visibleViewTilesCount = $derived(workingTiles.filter(isTileEnabled).length);
   const mountedElements = new Map<string, HTMLElement & { data?: unknown }>();
 
   // Push live SignalR DataUpdate payloads to mounted tiles without remounting the grid
@@ -289,10 +291,12 @@
 
   function buildTileDom(tile: TileLayoutItem): HTMLDivElement {
     const resolved = resolveTileDef(tile.type);
+    const enabled = isTileEnabled(tile);
     const item = document.createElement('div');
     item.className = 'grid-stack-item';
     item.dataset.tileId = tile.id;
     item.dataset.pinned = String(Boolean(tile.pinned));
+    item.dataset.disabled = String(!enabled);
 
     const content = document.createElement('div');
     content.className = 'grid-stack-item-content';
@@ -333,6 +337,18 @@
     });
     actions.appendChild(cloneBtn);
 
+    const enableBtn = document.createElement('button');
+    enableBtn.type = 'button';
+    enableBtn.title = enabled ? 'Disable tile (hidden in view mode)' : 'Enable tile';
+    enableBtn.setAttribute('aria-label', enableBtn.title);
+    enableBtn.textContent = enabled ? 'On' : 'Off';
+    if (!enabled) enableBtn.classList.add('is-disabled');
+    enableBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setTileEnabled(tile.id, !enabled);
+    });
+    actions.appendChild(enableBtn);
+
     const pinBtn = document.createElement('button');
     pinBtn.type = 'button';
     pinBtn.title = tile.pinned ? 'Unpin tile' : 'Pin tile';
@@ -369,7 +385,14 @@
     const body = document.createElement('div');
     body.className = 'tile-body';
 
-    if (resolved.def) {
+    if (!enabled) {
+      body.innerHTML = `
+        <div class="tile-placeholder tile-disabled-placeholder">
+          <strong>Disabled</strong>
+          <span class="muted">Hidden in view mode · Updates paused</span>
+        </div>
+      `;
+    } else if (resolved.def) {
       mountTileBody(body, tile, resolved.def);
     } else if (resolved.placeholder) {
       body.innerHTML = `
@@ -428,7 +451,8 @@
     grid = g;
 
     g.batchUpdate();
-    for (const tile of workingTiles) {
+    const tilesToRender = editMode ? workingTiles : workingTiles.filter(isTileEnabled);
+    for (const tile of tilesToRender) {
       const clampedW = Math.min(tile.w || 2, baseCols);
       const dom = buildTileDom(tile);
       const hasCoords = tile.x >= 0 && tile.y >= 0;
@@ -449,7 +473,9 @@
       g.compact('compact');
     }
 
-    syncFromGridToWorking();
+    if (editMode) {
+      syncFromGridToWorking();
+    }
 
     g.on('change', () => syncFromGridToWorking());
 
@@ -473,6 +499,14 @@
     });
   }
 
+  function setTileEnabled(tileId: string, enabled: boolean) {
+    syncFromGridToWorking();
+    const target = workingTiles.find((t) => t.id === tileId);
+    if (!target) return;
+    target.enabled = enabled;
+    mountGrid();
+  }
+
   function handlePickTile(def: AddonTile) {
     showPicker = false;
     syncFromGridToWorking();
@@ -481,7 +515,7 @@
     const h = Math.max(1, def.spec.defaultSize?.h || 2);
     workingTiles = [
       ...workingTiles,
-      { id, type: def.tileTypeId, x: -1, y: -1, w, h, pinned: false, order: workingTiles.length }
+      { id, type: def.tileTypeId, x: -1, y: -1, w, h, pinned: false, enabled: true, order: workingTiles.length }
     ];
     mountGrid();
 
@@ -518,6 +552,7 @@
         w: source.w,
         h: source.h,
         pinned: false,
+        enabled: isTileEnabled(source),
         order: workingTiles.length
       }
     ];
@@ -616,6 +651,15 @@
           <Icon name="plus" size={20} /> Add Tiles
         </button>
       </div>
+    {:else if visibleViewTilesCount === 0 && !editMode}
+      <div class="empty-prompt card">
+        <Icon name="view-dashboard" size={40} />
+        <h2>All tiles are disabled</h2>
+        <p class="muted">Enter Edit Mode to view or re-enable tiles on this dashboard.</p>
+        <button type="button" class="primary" onclick={onEnterEdit}>
+          Edit Dashboard
+        </button>
+      </div>
     {/if}
 
     <div class="grid-outer" bind:this={gridOuterEl}>
@@ -633,10 +677,15 @@
 {/if}
 
 {#if settingsTarget}
+  {@const targetTile = workingTiles.find((t) => t.id === settingsTarget?.tileId)}
   <TileSettingsModal
     tileDef={settingsTarget.def}
     currentSettings={dashboard.tileSettings[settingsTarget.tileId] ?? {}}
+    tileEnabled={targetTile ? isTileEnabled(targetTile) : true}
     saving={savingTileSettings}
+    onToggleEnabled={(enabled) => {
+      if (settingsTarget) setTileEnabled(settingsTarget.tileId, enabled);
+    }}
     onSave={handleSaveTileSettings}
     onClose={() => (settingsTarget = null)}
   />

@@ -26,6 +26,7 @@ public sealed class TileLayoutItem
     public int W { get; set; } = 2;
     public int H { get; set; } = 2;
     public bool Pinned { get; set; }
+    public bool Enabled { get; set; } = true;
     public int Order { get; set; }
 }
 

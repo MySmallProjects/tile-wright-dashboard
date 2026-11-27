@@ -193,6 +193,7 @@ public static partial class DashboardEndpoints
                     W = tile.W > 0 ? tile.W : 2,
                     H = tile.H > 0 ? tile.H : 2,
                     Pinned = tile.Pinned,
+                    Enabled = tile.Enabled,
                     Order = tile.Order
                 });
 

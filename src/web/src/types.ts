@@ -64,6 +64,7 @@ export interface TileLayoutItem {
   w: number;
   h: number;
   pinned: boolean;
+  enabled?: boolean;
   order: number;
 }
 

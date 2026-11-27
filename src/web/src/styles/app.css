@@ -194,6 +194,12 @@ input[type="range"] {
   border-color: transparent;
 }
 
+.tile-toolbar-actions button.is-disabled {
+  background: color-mix(in srgb, var(--tw-state-warning) 20%, transparent);
+  color: var(--tw-state-warning);
+  border-color: color-mix(in srgb, var(--tw-state-warning) 45%, transparent);
+}
+
 .tile-body {
   flex: 1;
   min-height: 0;
@@ -219,6 +225,12 @@ input[type="range"] {
 .is-edit-mode .grid-stack-item[data-pinned="true"] .grid-stack-item-content {
   outline-style: solid;
   outline-color: var(--tw-accent);
+}
+
+.is-edit-mode .grid-stack-item[data-disabled="true"] .grid-stack-item-content {
+  opacity: 0.62;
+  outline-style: dashed;
+  outline-color: var(--tw-text-muted);
 }
 
 .grid-stack-item-content.tile-flash {

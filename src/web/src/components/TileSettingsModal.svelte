@@ -13,13 +13,17 @@
   let {
     tileDef,
     currentSettings = {},
+    tileEnabled = true,
     saving = false,
+    onToggleEnabled,
     onSave,
     onClose
   }: {
     tileDef: AddonTile;
     currentSettings?: Record<string, unknown>;
+    tileEnabled?: boolean;
     saving?: boolean;
+    onToggleEnabled?: (enabled: boolean) => void;
     onSave: (nextSettings: Record<string, unknown>) => void;
     onClose: () => void;
   } = $props();
@@ -176,6 +180,21 @@
     </header>
 
     <div class="modal-body">
+      {#if onToggleEnabled}
+        <label class="tile-enabled-row">
+          <div class="tile-enabled-copy">
+            <strong>Enabled</strong>
+            <span class="muted">When disabled, this tile only appears in edit mode and will not update.</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={tileEnabled}
+            disabled={saving}
+            onchange={(e) => onToggleEnabled((e.currentTarget as HTMLInputElement).checked)}
+          />
+        </label>
+      {/if}
+
       {#if transferError}
         <div class="transfer-banner error" role="alert">
           <span>{transferError}</span>
@@ -276,6 +295,33 @@
   .modal-body {
     padding: 16px 18px;
     overflow-y: auto;
+  }
+  .tile-enabled-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border-radius: 8px;
+    background: var(--tw-surface-elevated);
+    border: 1px solid var(--tw-border);
+    cursor: pointer;
+  }
+  .tile-enabled-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.88rem;
+  }
+  .tile-enabled-copy .muted {
+    font-size: 0.78rem;
+  }
+  .tile-enabled-row input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
   }
   .transfer-banner {
     display: flex;
