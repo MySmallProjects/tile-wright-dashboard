@@ -6,7 +6,7 @@
     buildTileSettingsFilename,
     parseTileSettingsImport
   } from '../lib/tileSettingsTransfer';
-  import type { AddonTile } from '../types';
+  import type { AddonTile, DashboardSummary } from '../types';
   import Icon from './Icon.svelte';
   import SchemaForm from './SchemaForm.svelte';
 
@@ -14,16 +14,22 @@
     tileDef,
     currentSettings = {},
     tileEnabled = true,
+    dashboards = [],
+    currentDashboardId = null,
     saving = false,
     onToggleEnabled,
+    onCopyToDashboard,
     onSave,
     onClose
   }: {
     tileDef: AddonTile;
     currentSettings?: Record<string, unknown>;
     tileEnabled?: boolean;
+    dashboards?: DashboardSummary[];
+    currentDashboardId?: string | null;
     saving?: boolean;
     onToggleEnabled?: (enabled: boolean) => void;
+    onCopyToDashboard?: (target: DashboardSummary, draftSettings: Record<string, unknown>) => Promise<void>;
     onSave: (nextSettings: Record<string, unknown>) => void;
     onClose: () => void;
   } = $props();
@@ -45,6 +51,8 @@
   let importFileInput: HTMLInputElement | undefined = $state();
   let transferError = $state('');
   let transferNotice = $state('');
+  let showCopyMenu = $state(false);
+  let copyingToDashboard = $state(false);
 
   const hasSettings = $derived(
     Boolean(tileDef.spec.settingsElement) || tileDef.spec.settingsSchema.length > 0
@@ -130,6 +138,22 @@
       transferError = 'Failed to read the selected file.';
     }
   }
+
+  async function handleCopyPick(target: DashboardSummary) {
+    if (!onCopyToDashboard || copyingToDashboard) return;
+    showCopyMenu = false;
+    copyingToDashboard = true;
+    transferError = '';
+    transferNotice = '';
+    try {
+      await onCopyToDashboard(target, getCurrentDraftSettings());
+      transferNotice = `Copied tile to "${target.name}".`;
+    } catch {
+      transferError = `Failed to copy tile to "${target.name}".`;
+    } finally {
+      copyingToDashboard = false;
+    }
+  }
 </script>
 
 <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label={`Settings: ${tileDef.spec.name}`}>
@@ -148,7 +172,7 @@
             type="button"
             class="icon-btn ghost"
             onclick={handleExport}
-            disabled={saving}
+            disabled={saving || copyingToDashboard}
             title="Download settings JSON"
             aria-label="Download settings JSON"
           >
@@ -158,7 +182,7 @@
             type="button"
             class="icon-btn ghost"
             onclick={triggerImport}
-            disabled={saving}
+            disabled={saving || copyingToDashboard}
             title="Upload settings JSON"
             aria-label="Upload settings JSON"
           >
@@ -171,6 +195,50 @@
             bind:this={importFileInput}
             onchange={handleImportFile}
           />
+        {/if}
+        {#if onCopyToDashboard && dashboards.length > 0}
+          <div class="copy-wrap">
+            <button
+              type="button"
+              class="icon-btn ghost"
+              onclick={() => (showCopyMenu = !showCopyMenu)}
+              disabled={saving || copyingToDashboard}
+              title="Copy tile to dashboard"
+              aria-label="Copy tile to dashboard"
+              aria-haspopup="menu"
+              aria-expanded={showCopyMenu}
+            >
+              <Icon name="arrow-right" size={20} />
+            </button>
+            {#if showCopyMenu}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="copy-backdrop" onclick={() => (showCopyMenu = false)}></div>
+              <div class="copy-menu card" role="menu" aria-label="Copy tile to dashboard">
+                <div class="copy-menu-header">Copy tile to dashboard</div>
+                <div class="copy-menu-list">
+                  {#each dashboards as dash (dash.id)}
+                    <button
+                      type="button"
+                      class="copy-menu-item"
+                      role="menuitem"
+                      onclick={() => void handleCopyPick(dash)}
+                    >
+                      <Icon name={dash.icon || 'view-dashboard'} size={18} />
+                      <span class="copy-menu-name">{dash.name}</span>
+                      {#if dash.id === currentDashboardId}
+                        <span class="copy-menu-tag">Current</span>
+                      {:else if dash.enabled === false}
+                        <span class="copy-menu-tag">Disabled</span>
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+        {#if hasSettings || (onCopyToDashboard && dashboards.length > 0)}
           <span class="header-divider" aria-hidden="true"></span>
         {/if}
         <button type="button" class="icon-btn ghost" onclick={onClose} aria-label="Close">
@@ -284,6 +352,68 @@
     height: 20px;
     background: var(--tw-border);
     margin: 0 4px;
+  }
+  .copy-wrap {
+    position: relative;
+  }
+  .copy-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+  }
+  .copy-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    min-width: 220px;
+    max-width: 280px;
+    background: var(--tw-surface-solid);
+    border: 1px solid var(--tw-border);
+    box-shadow: var(--tw-tile-shadow);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .copy-menu-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tw-text-muted);
+    padding: 4px 8px;
+  }
+  .copy-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .copy-menu-item {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 7px 10px;
+    border-color: transparent;
+    background: transparent;
+    font-size: 0.88rem;
+  }
+  .copy-menu-item:hover {
+    background: var(--tw-surface-elevated);
+    border-color: var(--tw-border);
+  }
+  .copy-menu-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .copy-menu-tag {
+    font-size: 0.72rem;
+    color: var(--tw-text-muted);
+    flex-shrink: 0;
   }
   .modal-header h2 {
     margin: 0;

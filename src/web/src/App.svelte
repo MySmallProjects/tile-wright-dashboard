@@ -499,6 +499,7 @@
         {#key activeDashboard.summary.id}
           <DashboardGrid
             dashboard={activeDashboard}
+            {dashboards}
             {userSettings}
             {addonOverview}
             {editMode}

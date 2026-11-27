@@ -10,6 +10,7 @@
     AddonOverview,
     AddonTile,
     DashboardDetail,
+    DashboardSummary,
     TileLayoutItem,
     UserSettings
   } from '../types';
@@ -25,6 +26,7 @@
 
   let {
     dashboard,
+    dashboards = [],
     userSettings,
     addonOverview,
     editMode = false,
@@ -37,6 +39,7 @@
     onNotify
   }: {
     dashboard: DashboardDetail;
+    dashboards?: DashboardSummary[];
     userSettings: UserSettings;
     addonOverview: AddonOverview;
     editMode: boolean;
@@ -560,6 +563,58 @@
     mountGrid();
   }
 
+  async function handleCopyTileToDashboard(
+    targetDashboard: DashboardSummary,
+    draftSettings: Record<string, unknown>
+  ): Promise<void> {
+    if (!settingsTarget) return;
+    syncFromGridToWorking();
+    const source = workingTiles.find((t) => t.id === settingsTarget?.tileId);
+    if (!source) throw new Error('Source tile not found.');
+
+    const newId = `t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const clonedSettings = clone(draftSettings);
+
+    if (targetDashboard.id === dashboard.summary.id) {
+      await api.saveTileSettings(dashboard.summary.id, newId, clonedSettings);
+      dashboard.tileSettings[newId] = clonedSettings;
+      workingTiles = [
+        ...workingTiles,
+        {
+          id: newId,
+          type: source.type,
+          x: -1,
+          y: -1,
+          w: source.w,
+          h: source.h,
+          pinned: false,
+          enabled: isTileEnabled(source),
+          order: workingTiles.length
+        }
+      ];
+      flashTileId = newId;
+      mountGrid();
+      onNotify(`Copied tile to "${targetDashboard.name}".`);
+      return;
+    }
+
+    const targetDetail = await api.getDashboard(targetDashboard.id);
+    const nextTile: TileLayoutItem = {
+      id: newId,
+      type: source.type,
+      x: -1,
+      y: -1,
+      w: source.w,
+      h: source.h,
+      pinned: false,
+      enabled: isTileEnabled(source),
+      order: targetDetail.tiles.length
+    };
+    await api.saveTileSettings(targetDashboard.id, newId, clonedSettings);
+    await api.saveLayout(targetDashboard.id, [...targetDetail.tiles, nextTile]);
+    onNotify(`Copied tile to "${targetDashboard.name}".`);
+  }
+
   async function handleSaveTileSettings(nextSettings: Record<string, unknown>) {
     if (!settingsTarget) return;
     savingTileSettings = true;
@@ -682,10 +737,13 @@
     tileDef={settingsTarget.def}
     currentSettings={dashboard.tileSettings[settingsTarget.tileId] ?? {}}
     tileEnabled={targetTile ? isTileEnabled(targetTile) : true}
+    {dashboards}
+    currentDashboardId={dashboard.summary.id}
     saving={savingTileSettings}
     onToggleEnabled={(enabled) => {
       if (settingsTarget) setTileEnabled(settingsTarget.tileId, enabled);
     }}
+    onCopyToDashboard={handleCopyTileToDashboard}
     onSave={handleSaveTileSettings}
     onClose={() => (settingsTarget = null)}
   />
