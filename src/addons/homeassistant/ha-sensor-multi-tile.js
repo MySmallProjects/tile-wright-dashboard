@@ -15,6 +15,8 @@ class TwAddonHaSensorMulti extends HTMLElement {
       entityId: String(item?.manualEntityId || item?.entityId || '').trim(),
       name: String(item?.name || item?.label || '').trim(),
       icon: String(item?.icon || '').trim(),
+      iconSize: String(item?.iconSize || '').trim(),
+      valueSize: String(item?.valueSize || 'medium').trim(),
       unitOverride: String(item?.unitOverride || '').trim(),
       valueFormat: String(item?.valueFormat || '').trim()
     }));
@@ -227,9 +229,20 @@ class TwAddonHaSensorMulti extends HTMLElement {
     return { item, label, colour, iconHtml, valueHtml };
   }
 
+  _buildRowStyle(vm) {
+    const iconSizeMap = { xsmall: 24, small: 32, medium: 48, large: 64, xlarge: 128 };
+    const valueScaleMap = { small: 0.75, medium: 1, large: 1.35, xlarge: 1.8 };
+    const parts = [`--row-colour: ${this._escapeHtml(vm.colour)}`];
+    const iconPx = iconSizeMap[vm.item.iconSize];
+    if (iconPx) parts.push(`--row-icon-size: ${iconPx}px`);
+    const valScale = valueScaleMap[vm.item.valueSize];
+    if (valScale && valScale !== 1) parts.push(`--row-val-scale: ${valScale}`);
+    return parts.join('; ') + ';';
+  }
+
   _renderStackedRow(vm) {
     return `
-      <div class="row" part="row" style="--row-colour: ${this._escapeHtml(vm.colour)};">
+      <div class="row" part="row" style="${this._buildRowStyle(vm)}">
         <div class="head">
           ${vm.iconHtml}
           <span class="label" part="label">${this._escapeHtml(vm.label)}</span>
@@ -243,7 +256,7 @@ class TwAddonHaSensorMulti extends HTMLElement {
 
   _renderInlineRow(vm) {
     return `
-      <div class="row" part="row" style="--row-colour: ${this._escapeHtml(vm.colour)};">
+      <div class="row" part="row" style="${this._buildRowStyle(vm)}">
         <div class="left">
           ${vm.iconHtml}
           <span class="label" part="label">${this._escapeHtml(vm.label)}</span>
@@ -368,13 +381,8 @@ class TwAddonHaSensorMulti extends HTMLElement {
           min-width: 0;
         }
         .layout-stacked .icon-box {
-          width: 22px;
-          height: 22px;
-        }
-        .layout-stacked .icon-box svg,
-        .layout-stacked .icon-box img {
-          width: 22px;
-          height: 22px;
+          width: var(--row-icon-size, 22px);
+          height: var(--row-icon-size, 22px);
         }
         .layout-stacked .label {
           font-size: 0.86rem;
@@ -386,12 +394,12 @@ class TwAddonHaSensorMulti extends HTMLElement {
           text-align: ${valueAlign};
         }
         .layout-stacked .val {
-          font-size: 1.7rem;
+          font-size: calc(1.7rem * var(--row-val-scale, 1));
           font-weight: 700;
           line-height: 1.1;
         }
         .layout-stacked .unit {
-          font-size: 0.92rem;
+          font-size: calc(0.92rem * var(--row-val-scale, 1));
         }
 
         /* Grid layout: cards with icon + title on top, value below */
@@ -419,13 +427,8 @@ class TwAddonHaSensorMulti extends HTMLElement {
           min-width: 0;
         }
         .layout-grid .icon-box {
-          width: 20px;
-          height: 20px;
-        }
-        .layout-grid .icon-box svg,
-        .layout-grid .icon-box img {
-          width: 20px;
-          height: 20px;
+          width: var(--row-icon-size, 20px);
+          height: var(--row-icon-size, 20px);
         }
         .layout-grid .label {
           font-size: 0.82rem;
@@ -437,12 +440,12 @@ class TwAddonHaSensorMulti extends HTMLElement {
           text-align: ${valueAlign};
         }
         .layout-grid .val {
-          font-size: 1.45rem;
+          font-size: calc(1.45rem * var(--row-val-scale, 1));
           font-weight: 700;
           line-height: 1.1;
         }
         .layout-grid .unit {
-          font-size: 0.86rem;
+          font-size: calc(0.86rem * var(--row-val-scale, 1));
         }
 
         /* Inline layout: single-line rows with icon, name, value */
@@ -478,13 +481,8 @@ class TwAddonHaSensorMulti extends HTMLElement {
           max-width: 60%;
         }
         .layout-inline .icon-box {
-          width: 20px;
-          height: 20px;
-        }
-        .layout-inline .icon-box svg,
-        .layout-inline .icon-box img {
-          width: 20px;
-          height: 20px;
+          width: var(--row-icon-size, 20px);
+          height: var(--row-icon-size, 20px);
         }
         .layout-inline .label {
           font-size: 0.88rem;
@@ -492,12 +490,12 @@ class TwAddonHaSensorMulti extends HTMLElement {
           color: var(--tw-text-muted);
         }
         .layout-inline .val {
-          font-size: 1.1rem;
+          font-size: calc(1.1rem * var(--row-val-scale, 1));
           font-weight: 700;
           line-height: 1.15;
         }
         .layout-inline .unit {
-          font-size: 0.82rem;
+          font-size: calc(0.82rem * var(--row-val-scale, 1));
         }
 
         /* Shared */
@@ -510,6 +508,8 @@ class TwAddonHaSensorMulti extends HTMLElement {
         }
         .icon-box svg,
         .icon-box img {
+          width: 100%;
+          height: 100%;
           max-width: 100%;
           max-height: 100%;
           object-fit: contain;

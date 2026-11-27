@@ -187,6 +187,31 @@
               { "key": "manualEntityId", "label": "Manual Entity ID", "type": "text" },
               { "key": "name", "label": "Name (optional)", "type": "text" },
               { "key": "icon", "label": "Icon (optional)", "type": "icon" },
+              {
+                "key": "iconSize",
+                "label": "Icon size",
+                "type": "select",
+                "defaultValue": "xsmall",
+                "options": [
+                  { "value": "xsmall", "label": "X-Small (24x24)" },
+                  { "value": "small", "label": "Small (32x32)" },
+                  { "value": "medium", "label": "Medium (48x48)" },
+                  { "value": "large", "label": "Large (64x64)" },
+                  { "value": "xlarge", "label": "X-Large (128x128)" }
+                ]
+              },
+              {
+                "key": "valueSize",
+                "label": "Value text size",
+                "type": "select",
+                "defaultValue": "medium",
+                "options": [
+                  { "value": "small", "label": "Small" },
+                  { "value": "medium", "label": "Medium (default)" },
+                  { "value": "large", "label": "Large" },
+                  { "value": "xlarge", "label": "X-Large" }
+                ]
+              },
               { "key": "unitOverride", "label": "Unit override", "type": "text" },
               { "key": "valueFormat", "label": "Value format", "type": "text" }
             ]
