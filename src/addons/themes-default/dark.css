@@ -70,6 +70,31 @@
   --tw-slider-handle-radius: 999px;
   --tw-slider-handle-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   --tw-slider-value-color: var(--tw-text-muted);
+
+  /* Floating top bar show/hide toggle hooks
+   * --tw-topbar-toggle-bg:           Button background (falls back to --tw-chrome-bg)
+   * --tw-topbar-toggle-color:        Icon tint colour (falls back to --tw-text)
+   * --tw-topbar-toggle-border:       Button border (falls back to 1px solid var(--tw-border))
+   * --tw-topbar-toggle-radius:       Button corner radius (999px = circle)
+   * --tw-topbar-toggle-size:         Button width & height
+   * --tw-topbar-toggle-shadow:       Button box-shadow
+   * --tw-topbar-toggle-idle-opacity: Opacity when hidden & untouched (0.3 = 70% transparent)
+   * --tw-topbar-toggle-icon-size:    Icon width & height
+   * --tw-topbar-toggle-icon-show:    CSS url(...) mask image for the "show top bar" icon
+   * --tw-topbar-toggle-icon-hide:    CSS url(...) mask image for the "hide top bar" icon
+   *
+   * Unscoped CSS hooks for full-colour images or custom overrides:
+   *   .tw-topbar-toggle[data-state="closed"] .tw-topbar-toggle-icon
+   *   .tw-topbar-toggle[data-state="open"] .tw-topbar-toggle-icon
+   */
+  --tw-topbar-toggle-bg: var(--tw-chrome-bg);
+  --tw-topbar-toggle-color: var(--tw-text);
+  --tw-topbar-toggle-border: 1px solid var(--tw-border);
+  --tw-topbar-toggle-radius: 999px;
+  --tw-topbar-toggle-size: 38px;
+  --tw-topbar-toggle-shadow: var(--tw-tile-shadow);
+  --tw-topbar-toggle-idle-opacity: 0.3;
+  --tw-topbar-toggle-icon-size: 20px;
 }
 [data-theme="dark"] tw-addon-ha-control-multi::part(slider) {
   /* Custom slider element overrides for Dark theme */

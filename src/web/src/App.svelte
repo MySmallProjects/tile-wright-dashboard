@@ -68,6 +68,10 @@
     iconPacks: []
   });
   let editMode = $state(false);
+  let topbarOpen = $state(false);
+  let topbarOverflowVisible = $state(false);
+  let topbarToggleIdle = $state(true);
+  let topbarToggleTimer: number | null = null;
   let showSettings = $state(false);
   let showDashboardManager = $state(false);
   let serverVersionInfo = $state<VersionInfo | null>(null);
@@ -78,6 +82,37 @@
   let toastMsg = $state('');
   let toastTimer: number | null = null;
   let swipeStart: { x: number; y: number; time: number } | null = null;
+
+  function bumpTopbarToggle() {
+    topbarToggleIdle = false;
+    if (topbarToggleTimer !== null) clearTimeout(topbarToggleTimer);
+    topbarToggleTimer = window.setTimeout(() => {
+      topbarToggleIdle = true;
+      topbarToggleTimer = null;
+    }, 3000);
+  }
+
+  function toggleTopbar() {
+    if (topbarOpen) {
+      topbarOverflowVisible = false;
+      topbarOpen = false;
+    } else {
+      topbarOpen = true;
+    }
+    bumpTopbarToggle();
+  }
+
+  function handleTopbarTransitionEnd(e: TransitionEvent) {
+    if (e.propertyName === 'grid-template-rows' && topbarOpen) {
+      topbarOverflowVisible = true;
+    }
+  }
+
+  $effect(() => {
+    if (editMode && !topbarOpen) {
+      topbarOpen = true;
+    }
+  });
 
   function notify(msg: string, durationMs?: number) {
     toastMsg = msg;
@@ -382,6 +417,7 @@
   });
 
   onDestroy(() => {
+    if (topbarToggleTimer !== null) clearTimeout(topbarToggleTimer);
     void hub.stop();
   });
 </script>
@@ -399,33 +435,58 @@
   {:else if !currentUser}
     <LoginScreen onLoggedIn={handleLoggedIn} />
   {:else}
-    <header class="topbar">
-      <div class="topbar-left">
-        <DashboardSwitcher
-          dashboards={enabledDashboards}
-          activeId={activeDashboard?.summary.id ?? null}
-          disabled={editMode}
-          onSelect={(id) => void selectDashboard(id)}
-          onManage={() => (showDashboardManager = true)}
-        />
-        <span class="hub-dot" class:connected={hubConnected} title={hubConnected ? 'Live connected' : 'Offline / reconnecting'}></span>
-      </div>
+    <button
+      type="button"
+      class="tw-topbar-toggle icon-btn"
+      data-state={topbarOpen ? 'open' : 'closed'}
+      class:is-open={topbarOpen}
+      class:is-idle={!topbarOpen && topbarToggleIdle}
+      onclick={toggleTopbar}
+      onpointerenter={bumpTopbarToggle}
+      onfocus={bumpTopbarToggle}
+      aria-expanded={topbarOpen}
+      aria-label={topbarOpen ? 'Hide top bar' : 'Show top bar'}
+      title={topbarOpen ? 'Hide top bar' : 'Show top bar'}
+    >
+      <span class="tw-topbar-toggle-icon" aria-hidden="true"></span>
+    </button>
 
-      <div class="topbar-right">
-        <ShellExtensionSlot slot="topbar" addons={addonOverview.addons} host={shellHost} />
-        {#if !editMode}
-          <button type="button" onclick={() => (editMode = true)} title="Edit dashboard layout">
-            <Icon name="pencil" size={18} /> Edit
-          </button>
-        {/if}
-        <button type="button" class="icon-btn" onclick={() => (showSettings = true)} aria-label="Settings" title="Settings">
-          <Icon name="cog" size={20} />
-        </button>
-        <button type="button" class="icon-btn" onclick={handleLogout} aria-label="Log out" title="Log out ({currentUser.displayName})">
-          <Icon name="logout" size={20} />
-        </button>
+    <div
+      class="topbar-shell"
+      class:is-open={topbarOpen}
+      inert={!topbarOpen}
+      ontransitionend={handleTopbarTransitionEnd}
+    >
+      <div class="topbar-inner" class:overflow-visible={topbarOverflowVisible}>
+        <header class="topbar">
+          <div class="topbar-left">
+            <DashboardSwitcher
+              dashboards={enabledDashboards}
+              activeId={activeDashboard?.summary.id ?? null}
+              disabled={editMode}
+              onSelect={(id) => void selectDashboard(id)}
+              onManage={() => (showDashboardManager = true)}
+            />
+            <span class="hub-dot" class:connected={hubConnected} title={hubConnected ? 'Live connected' : 'Offline / reconnecting'}></span>
+          </div>
+
+          <div class="topbar-right">
+            <ShellExtensionSlot slot="topbar" addons={addonOverview.addons} host={shellHost} />
+            {#if !editMode}
+              <button type="button" onclick={() => (editMode = true)} title="Edit dashboard layout">
+                <Icon name="pencil" size={18} /> Edit
+              </button>
+            {/if}
+            <button type="button" class="icon-btn" onclick={() => (showSettings = true)} aria-label="Settings" title="Settings">
+              <Icon name="cog" size={20} />
+            </button>
+            <button type="button" class="icon-btn" onclick={handleLogout} aria-label="Log out" title="Log out ({currentUser.displayName})">
+              <Icon name="logout" size={20} />
+            </button>
+          </div>
+        </header>
       </div>
-    </header>
+    </div>
 
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
@@ -514,12 +575,28 @@
     color: var(--tw-text-muted);
     font-size: 1rem;
   }
+  .topbar-shell {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.24s ease;
+    flex-shrink: 0;
+  }
+  .topbar-shell.is-open {
+    grid-template-rows: 1fr;
+  }
+  .topbar-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .topbar-inner.overflow-visible {
+    overflow: visible;
+  }
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 8px 14px;
+    padding: 8px 14px 8px 54px;
     background: var(--tw-chrome-bg);
     border-bottom: 1px solid var(--tw-border);
   }
