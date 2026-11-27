@@ -97,6 +97,25 @@ class TwAddonCountdown extends HTMLElement {
     }
 
     const layout = this._settings.layout || 'stacked';
+    const iconSizeMap = { small: 32, medium: 48, large: 64, xlarge: 128 };
+    const iconPx = iconSizeMap[this._settings.iconSize] || 48;
+    const counterSizeMap = {
+      small:  { stacked: '1.3rem',  split: '1.4rem',  today: '1.05rem' },
+      medium: { stacked: '1.75rem', split: '1.85rem', today: '1.35rem' },
+      large:  { stacked: '2.35rem', split: '2.5rem',  today: '1.8rem'  },
+      xlarge: { stacked: '3.0rem',  split: '3.2rem',  today: '2.25rem' }
+    };
+    const counterFont = counterSizeMap[this._settings.counterSize] || counterSizeMap.medium;
+    const rawMarginLeft = Number(this._settings.iconMarginLeft);
+    const iconMarginLeft = Number.isFinite(rawMarginLeft)
+      ? Math.max(-128, Math.min(128, rawMarginLeft))
+      : 0;
+    const rawTrimX = Number(this._settings.iconTrimX);
+    const iconTrimX = Number.isFinite(rawTrimX)
+      ? Math.max(0, Math.min(64, rawTrimX))
+      : 0;
+    const effectiveMarginLeft = iconMarginLeft - iconTrimX;
+    const effectiveMarginRight = -iconTrimX;
     const iconName = this._settings.icon || '';
     const resolvedIcon = iconName && typeof this._context?.resolveIcon === 'function'
       ? this._context.resolveIcon(iconName)
@@ -146,16 +165,22 @@ class TwAddonCountdown extends HTMLElement {
         .icon {
           color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
           display: flex; align-items: center; justify-content: center;
+          flex: 0 1 auto; min-height: 0; max-height: 100%;
         }
-        .wrap .icon img,
+        .wrap .icon img {
+          width: auto; height: ${iconPx}px; max-width: min(${iconPx}px, 100%); max-height: 100%;
+          object-fit: contain; display: block;
+        }
         .wrap .icon svg {
-          width: 28px; height: 28px; object-fit: contain; display: block;
+          width: auto; height: ${iconPx}px; aspect-ratio: 1 / 1;
+          max-width: 100%; max-height: 100%; display: block;
         }
         .big {
-          font-size: 1.75rem; font-weight: 700; line-height: 1.05;
+          flex-shrink: 0;
+          font-size: ${counterFont.stacked}; font-weight: 700; line-height: 1.05;
           color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
         }
-        .sub { font-size: 0.88rem; color: var(--tw-text-muted); font-weight: 500; }
+        .sub { flex-shrink: 0; font-size: 0.88rem; color: var(--tw-text-muted); font-weight: 500; }
         .setup { font-size: 0.84rem; color: var(--tw-text-muted); }
 
         /* Split layout: absolute inset:0 flex column so bottom label is NEVER pushed out */
@@ -171,12 +196,20 @@ class TwAddonCountdown extends HTMLElement {
         }
         .split-left {
           flex: 0 1 auto; display: flex; align-items: center; justify-content: center;
-          max-height: 100%; overflow: hidden;
+          height: 100%; max-height: 100%; overflow: hidden;
         }
-        .split-left .icon img,
-        .split-left .icon svg {
-          width: 40px; height: 40px; max-width: 100%; max-height: 100%;
+        .split-left .icon {
+          height: 100%; max-height: 100%;
+          ${effectiveMarginLeft !== 0 ? `margin-left: ${effectiveMarginLeft}px;` : ''}
+          ${effectiveMarginRight !== 0 ? `margin-right: ${effectiveMarginRight}px;` : ''}
+        }
+        .split-left .icon img {
+          width: auto; height: ${iconPx}px; max-width: ${iconPx}px; max-height: 100%;
           object-fit: contain; display: block;
+        }
+        .split-left .icon svg {
+          width: auto; height: ${iconPx}px; aspect-ratio: 1 / 1;
+          max-width: 100%; max-height: 100%; display: block;
         }
         .split-right {
           flex: 1 1 0; min-width: 0;
@@ -184,7 +217,7 @@ class TwAddonCountdown extends HTMLElement {
           text-align: center; overflow: hidden;
         }
         .split-num {
-          font-size: ${isToday ? '1.35rem' : '1.85rem'};
+          font-size: ${isToday ? counterFont.today : counterFont.split};
           font-weight: 700; line-height: 1;
           color: ${isToday ? 'var(--tw-state-normal)' : 'var(--tw-accent)'};
           font-variant-numeric: tabular-nums;

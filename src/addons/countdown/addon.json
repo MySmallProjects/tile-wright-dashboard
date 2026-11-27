@@ -55,6 +55,30 @@
           },
           { "key": "icon", "label": "Icon", "type": "icon", "defaultValue": "clock-outline" },
           {
+            "key": "iconSize",
+            "label": "Icon size",
+            "type": "select",
+            "defaultValue": "medium",
+            "options": [
+              { "value": "small", "label": "Small (32x32)" },
+              { "value": "medium", "label": "Medium (48x48)" },
+              { "value": "large", "label": "Large (64x64)" },
+              { "value": "xlarge", "label": "X-Large (128x128)" }
+            ]
+          },
+          {
+            "key": "counterSize",
+            "label": "Counter text size",
+            "type": "select",
+            "defaultValue": "medium",
+            "options": [
+              { "value": "small", "label": "Small" },
+              { "value": "medium", "label": "Medium (default)" },
+              { "value": "large", "label": "Large" },
+              { "value": "xlarge", "label": "X-Large" }
+            ]
+          },
+          {
             "key": "layout",
             "label": "Layout",
             "type": "select",
@@ -63,6 +87,26 @@
               { "value": "stacked", "label": "Stacked (default)" },
               { "value": "split", "label": "Split (Icon + Counter)" }
             ]
+          },
+          {
+            "key": "iconMarginLeft",
+            "label": "Icon left margin (px)",
+            "type": "number",
+            "defaultValue": 0,
+            "min": -128,
+            "max": 128,
+            "visibleWhen": { "key": "layout", "equals": "split" },
+            "helpText": "Negative values (e.g. -20) shift the icon left to give more space to the counter."
+          },
+          {
+            "key": "iconTrimX",
+            "label": "Icon horizontal trim (px)",
+            "type": "number",
+            "defaultValue": 0,
+            "min": 0,
+            "max": 64,
+            "visibleWhen": { "key": "layout", "equals": "split" },
+            "helpText": "Trims transparent padding equally from both left and right sides of the icon (e.g. 20 trims 20px off each side)."
           }
         ]
       }
